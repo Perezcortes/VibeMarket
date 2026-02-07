@@ -1,24 +1,40 @@
 import Image from 'next/image';
-import { ShoppingCart, Eye } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 
+// Actualizamos la interfaz para que coincida con los campos de tu base de datos real
 interface ProductProps {
   product: {
-    name: string;
-    price: any;
-    description: string | null;
-    imageName: string | null;
-    category: string;
+    id: string; //
+    name: string; //
+    price: any; // Se maneja como Decimal en Prisma
+    description: string | null; //
+    // Relación con product_images: es un arreglo
+    product_images: {
+      url: string;
+    }[];
+    // Relación con categories
+    categories?: {
+      name: string;
+    } | null;
   }
 }
 
 export default function ProductCard({ product }: ProductProps) {
+  // Obtenemos la URL de la primera imagen disponible o un placeholder
+  const imageUrl = product.product_images && product.product_images.length > 0 
+    ? product.product_images[0].url 
+    : '/images/placeholder.png';
+
+  // Obtenemos el nombre de la categoría desde la relación
+  const categoryName = product.categories?.name || 'General';
+
   return (
     <div className="group bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300">
       {/* Contenedor de Imagen */}
       <div className="relative h-64 w-full bg-[#F8F9FD] overflow-hidden">
-        {product.imageName ? (
+        {imageUrl ? (
           <Image 
-            src={`/images/${product.imageName}`} 
+            src={imageUrl} 
             alt={product.name}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -28,7 +44,7 @@ export default function ProductCard({ product }: ProductProps) {
         )}
         {/* Badge de Categoría */}
         <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold text-gray-800 uppercase tracking-widest shadow-sm">
-          {product.category}
+          {categoryName}
         </div>
       </div>
 

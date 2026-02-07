@@ -3,9 +3,18 @@ import ProductCard from '@/components/ProductCard';
 import { Filter } from 'lucide-react';
 
 export default async function CatalogPage() {
-  const products = await prisma.product.findMany({
-    where: { isActive: true },
-    orderBy: { createdAt: 'desc' }
+  // Adaptamos la consulta a la nueva estructura
+  const products = await prisma.products.findMany({
+    where: { 
+      is_active: true // Campo actualizado de isActive a is_active
+    },
+    include: {
+      product_images: true, // Incluimos la tabla relacionada de imágenes
+      categories: true      // Opcional: Incluimos la categoría para mostrarla en la card
+    },
+    // Nota: El respaldo actual no incluye 'created_at' en la tabla products, 
+    // por lo que ordenamos por 'name' o eliminamos el orderBy
+    orderBy: { name: 'asc' } 
   });
 
   return (
