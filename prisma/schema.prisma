@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model addresses {
+  id          String   @id
+  user_id     String
+  street      String   @db.Text
+  city        String   @db.Text
+  state       String   @db.Text
+  postal_code String   @db.Text
+  country     String   @db.Text
+  users       users    @relation(fields: [user_id], references: [id])
+  orders      orders[]
+
+  @@index([user_id], map: "addresses_user_id_fkey")
+}
+
+model categories {
+  id               Int          @id @default(autoincrement())
+  name             String       @db.VarChar(100)
+  slug             String       @unique @db.VarChar(100)
+  description      String?      @db.Text
+  parent_id        Int?
+  categories       categories?  @relation("categoriesTocategories", fields: [parent_id], references: [id])
+  other_categories categories[] @relation("categoriesTocategories")
+  products         products[]
+
+  @@index([parent_id], map: "categories_parent_id_fkey")
+}
+
+model order_items {
+  id         String   @id
+  order_id   String
+  product_id String
+  quantity   Int
+  unit_price Decimal  @db.Decimal(10, 2)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  orders     orders   @relation(fields: [order_id], references: [id])
+  products   products @relation(fields: [product_id], references: [id])
+
+  @@unique([order_id, product_id])
+  @@index([product_id], map: "order_items_product_id_fkey")
+}
+
+model order_status_history {
+  id         String                      @id
+  order_id   String
+  status     order_status_history_status
+  changed_by String?
+  changed_at DateTime                    @default(now()) @db.Timestamp(0)
+  users      users?                      @relation(fields: [changed_by], references: [id])
+  orders     orders                      @relation(fields: [order_id], references: [id])
+
+  @@index([changed_by], map: "order_status_history_changed_by_fkey")
+  @@index([order_id], map: "order_status_history_order_id_fkey")
+}
+
+model orders {
+  id                             String                 @id
+  buyer_id                       String
+  courier_id                     String?
+  address_id                     String
+  total_amount                   Decimal                @default(0.00) @db.Decimal(12, 2)
+  status                         orders_status          @default(pendiente)
+  order_items                    order_items[]
+  order_status_history           order_status_history[]
+  addresses                      addresses              @relation(fields: [address_id], references: [id])
+  users_orders_buyer_idTousers   users                  @relation("orders_buyer_idTousers", fields: [buyer_id], references: [id])
+  users_orders_courier_idTousers users?                 @relation("orders_courier_idTousers", fields: [courier_id], references: [id])
+  payments                       payments[]
+
+  @@index([address_id], map: "orders_address_id_fkey")
+  @@index([buyer_id], map: "orders_buyer_id_fkey")
+  @@index([courier_id], map: "orders_courier_id_fkey")
+}
+
+model payments {
+  id         String          @id
+  order_id   String
+  provider   String          @db.VarChar(50)
+  status     payments_status @default(pendiente)
+  amount     Decimal         @db.Decimal(12, 2)
+  created_at DateTime        @default(now()) @db.Timestamp(0)
+  orders     orders          @relation(fields: [order_id], references: [id])
+
+  @@index([order_id], map: "payments_order_id_fkey")
+}
+
+model product_images {
+  id         String   @id
+  product_id String
+  url        String   @db.Text
+  products   products @relation(fields: [product_id], references: [id])
+
+  @@index([product_id], map: "product_images_product_id_fkey")
+}
+
+model products {
+  id             String           @id
+  seller_id      String
+  category_id    Int?
+  name           String           @db.VarChar(150)
+  slug           String           @unique @db.VarChar(150)
+  description    String?          @db.Text
+  price          Decimal          @db.Decimal(10, 2)
+  stock          Int              @default(0)
+  is_active      Boolean          @default(true)
+  order_items    order_items[]
+  product_images product_images[]
+  categories     categories?      @relation(fields: [category_id], references: [id])
+  users          users            @relation(fields: [seller_id], references: [id])
+  reviews        reviews[]
+
+  @@index([category_id], map: "products_category_id_fkey")
+  @@index([seller_id], map: "products_seller_id_fkey")
+}
+
+model reviews {
+  id         String   @id
+  product_id String
+  user_id    String
+  rating     Int
+  comment    String?  @db.Text
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  products   products @relation(fields: [product_id], references: [id])
+  users      users    @relation(fields: [user_id], references: [id])
+
+  @@unique([product_id, user_id])
+  @@index([user_id], map: "reviews_user_id_fkey")
+}
+
+model support_tickets {
+  id                                       String                   @id
+  user_id                                  String
+  assigned_to                              String?
+  subject                                  String                   @db.VarChar(200)
+  message                                  String                   @db.Text
+  status                                   support_tickets_status   @default(abierto)
+  priority                                 support_tickets_priority @default(media)
+  created_at                               DateTime                 @default(now()) @db.Timestamp(0)
+  updated_at                               DateTime                 @default(now()) @db.Timestamp(0)
+  users_support_tickets_assigned_toTousers users?                   @relation("support_tickets_assigned_toTousers", fields: [assigned_to], references: [id])
+  users_support_tickets_user_idTousers     users                    @relation("support_tickets_user_idTousers", fields: [user_id], references: [id])
+
+  @@index([assigned_to], map: "support_tickets_assigned_to_fkey")
+  @@index([user_id], map: "support_tickets_user_id_fkey")
+}
+
+model users {
+  id                                                 String                 @id
+  email                                              String                 @unique @db.VarChar(255)
+  password_hash                                      String                 @db.VarChar(255)
+  full_name                                          String                 @db.VarChar(100)
+  role                                               users_role             @default(comprador)
+  phone                                              String?                @db.VarChar(20)
+  is_active                                          Boolean                @default(true)
+  addresses                                          addresses[]
+  order_status_history                               order_status_history[]
+  orders_orders_buyer_idTousers                      orders[]               @relation("orders_buyer_idTousers")
+  orders_orders_courier_idTousers                    orders[]               @relation("orders_courier_idTousers")
+  products                                           products[]
+  reviews                                            reviews[]
+  support_tickets_support_tickets_assigned_toTousers support_tickets[]      @relation("support_tickets_assigned_toTousers")
+  support_tickets_support_tickets_user_idTousers     support_tickets[]      @relation("support_tickets_user_idTousers")
+}
+
+enum order_status_history_status {
+  pendiente
+  pagado
+  enviado
+  entregado
+  cancelado
+  devolucion
+}
+
+enum payments_status {
+  pendiente
+  aprobado
+  rechazado
+  reembolsado
+}
+
+enum users_role {
+  admin
+  vendedor
+  comprador
+  repartidor
+  soporte
+}
+
+enum orders_status {
+  pendiente
+  pagado
+  enviado
+  entregado
+  cancelado
+  devolucion
+}
+
+enum support_tickets_status {
+  abierto
+  en_proceso
+  resuelto
+  cerrado
+}
+
+enum support_tickets_priority {
+  baja
+  media
+  alta
+  critica
+}
