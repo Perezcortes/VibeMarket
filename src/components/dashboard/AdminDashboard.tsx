@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
+import UserManagement from "./admin/UserManagement"; 
 
 export default function AdminDashboard({ user }: { user: any }) {
   const [view, setView] = useState("overview");
@@ -104,7 +105,7 @@ export default function AdminDashboard({ user }: { user: any }) {
 
         {/* VISTA: RESUMEN (OVERVIEW) */}
         {view === 'overview' && (
-            <div className="space-y-8">
+            <div className="space-y-8 animate-in fade-in">
                 {/* Tarjetas Superiores */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <StatCard 
@@ -133,7 +134,7 @@ export default function AdminDashboard({ user }: { user: any }) {
                     />
                 </div>
 
-                {/* Gráficos o Tablas Recientes (Simulados) */}
+                {/* Gráficos o Tablas Recientes */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
                         <h3 className="font-bold text-gray-800 mb-4">Actividad Reciente</h3>
@@ -163,10 +164,15 @@ export default function AdminDashboard({ user }: { user: any }) {
                 </div>
             </div>
         )}
+
+        {/* 2. AQUÍ AGREGAMOS LA VISTA DE USUARIOS */}
+        {view === 'users' && (
+            <UserManagement />
+        )}
         
-        {/* VISTAS EN CONSTRUCCIÓN */}
-        {view !== 'overview' && (
-            <div className="flex flex-col items-center justify-center h-96 bg-white rounded-3xl border border-dashed border-gray-300 text-center">
+        {/* VISTAS EN CONSTRUCCIÓN (Actualizamos la condición para excluir 'users') */}
+        {view !== 'overview' && view !== 'users' && (
+            <div className="flex flex-col items-center justify-center h-96 bg-white rounded-3xl border border-dashed border-gray-300 text-center animate-in zoom-in-95">
                 <span className="material-symbols-outlined text-6xl text-gray-200 mb-4">construction</span>
                 <h3 className="text-xl font-bold text-gray-800">Módulo en Desarrollo</h3>
                 <p className="text-gray-500">Estamos trabajando en la sección: <span className="font-mono text-primary">{view}</span></p>
