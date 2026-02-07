@@ -27,6 +27,7 @@ export const authOptions: NextAuthOptions = {
 
         if (!matchPassword) throw new Error("Contraseña incorrecta");
 
+        // Retornamos el objeto User completo
         return {
           id: user.id,
           name: user.full_name,
@@ -37,15 +38,19 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    // 1. Al loguearse, metemos el ID y el ROL dentro del Token encriptado (JWT)
     async jwt({ token, user }: any) {
       if (user) {
-        token.role = user.role;
+        token.id = user.id;     
+        token.role = user.role; 
       }
       return token;
     },
+    // 2. Cada vez que el frontend o la API piden sesión, sacamos los datos del Token
     async session({ session, token }: any) {
       if (session.user) {
-        session.user.role = token.role;
+        session.user.id = token.id;     
+        session.user.role = token.role; 
       }
       return session;
     },
