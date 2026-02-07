@@ -71,6 +71,7 @@ model User {
   tickets       SupportTicket[]  @relation("UserTickets")
   assignedTickets SupportTicket[] @relation("AssignedSupport")
   reviews       Review[]
+  ticketMessages TicketMessage[]  @relation("SenderMessages")
 
   @@map("users")
 }
@@ -206,16 +207,19 @@ model SupportTicket {
   user_id     String
   assigned_to String?
   subject     String         @db.VarChar(200)
-  message     String         @db.Text
+  message     String         @db.Text // Mensaje inicial
   status      TicketStatus   @default(abierto)
   priority    TicketPriority @default(media)
   created_at  DateTime       @default(now()) @db.Timestamp(0)
   updated_at  DateTime       @default(now()) @updatedAt @db.Timestamp(0)
 
-  // Relaciones
+  // Relaciones existentes
   user        User           @relation("UserTickets", fields: [user_id], references: [id])
   assigned    User?          @relation("AssignedSupport", fields: [assigned_to], references: [id])
-
+  
+  // NUEVA RELACIÓN: Mensajes del chat
+  chat_messages TicketMessage[] 
+  
   @@map("support_tickets")
 }
 
@@ -233,4 +237,19 @@ model Review {
 
   @@unique([product_id, user_id])
   @@map("reviews")
+}
+
+model TicketMessage {
+  id        String   @id @default(uuid())
+  ticket_id String
+  sender_id String   
+  message   String   @db.Text
+  created_at DateTime @default(now()) @db.Timestamp(0)
+
+  // Relaciones
+  ticket    SupportTicket @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+  
+  sender    User          @relation("SenderMessages", fields: [sender_id], references: [id]) 
+
+  @@map("ticket_messages")
 }

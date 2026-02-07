@@ -25,4 +25,5 @@ export default withAuth(
 // Aquí definimos qué rutas protege el middleware
 export const config = {
   matcher: ["/dashboard/:path*"],
+  //matcher: [],
 };
