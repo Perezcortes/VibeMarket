@@ -1,0 +1,26 @@
+# 1. Instalar todas las librerías necesarias
+npm install
+
+# 2. Crear/Verificar el archivo .env en la raíz con esta línea:
+# DATABASE_URL="mysql://vibe_user:vibe123@localhost:3306/vibemarket"
+
+# 3. Sincronizar la estructura de la base de datos con MariaDB
+npx prisma db push
+
+# 4. Generar el cliente de Prisma para TypeScript
+npx prisma generate
+
+
+Comandos de Trabajo Diario
+Correr la aplicación: npm run dev (Abre http://localhost:3000/support/tickets).
+Ver/Editar base de datos visualmente: npx prisma studio (Abre http://localhost:5555).
+
+
+
+Diccionario de Archivos del Proyecto
+src/app/support/tickets/page.tsx Es el Dashboard principal donde se visualiza la tabla de gestión y el resumen de tickets activos.
+src/app/support/tickets/components/CreateTicketForm.tsx Componente interactivo que contiene el formulario para que los clientes envíen nuevas solicitudes.
+src/app/support/tickets/[id]/page.tsx Página de detalle dinámica que muestra el mensaje completo del ticket y permite cambiar su estado.
+src/app/support/tickets/lib/actions.ts El cerebro lógico del módulo; contiene las funciones que guardan, leen y actualizan la información en MariaDB.
+prisma/schema.prisma Archivo de configuración de la base de datos donde se definen las tablas de Usuarios y Tickets.
+src/lib/prisma.ts Configuración técnica para asegurar que solo haya una instancia de conexión a la base de datos activa.
