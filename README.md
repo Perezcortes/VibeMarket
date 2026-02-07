@@ -1,36 +1,171 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📘 Manual de Despliegue Local - VibeMarket
 
-## Getting Started
+Este documento detalla los pasos para configurar, instalar y ejecutar el
+entorno de desarrollo de **VibeMarket**.
 
-First, run the development server:
+------------------------------------------------------------------------
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🛠️ 1. Requisitos Previos
+
+Antes de comenzar, asegúrate de tener instalado lo siguiente:
+
+-   **Node.js** (Versión 18 o superior)
+-   **Git**
+-   **Base de Datos MySQL**, una de las siguientes opciones:
+    -   Opción A: XAMPP / MAMP (activar servicio MySQL)
+    -   Opción B: Docker (recomendado)
+    -   Opción C: MySQL Workbench / Servidor local nativo
+-   **VS Code** (editor recomendado)
+
+------------------------------------------------------------------------
+
+## 🚀 2. Instalación del Proyecto
+
+### Clonar el repositorio
+
+``` bash
+git clone <URL_DEL_REPOSITORIO>
+cd perezcortes-vibemarket
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Instalar dependencias
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+``` bash
+npm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Configurar Variables de Entorno
 
-## Learn More
+Crea un archivo `.env` en la raíz del proyecto:
 
-To learn more about Next.js, take a look at the following resources:
+``` env
+# Conexión a Base de Datos
+DATABASE_URL="mysql://root:@localhost:3306/vibemarket"
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Ejemplo con contraseña
+# DATABASE_URL="mysql://root:123456@localhost:3306/vibemarket"
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# NextAuth
+NEXTAUTH_SECRET="PIDELA AL EQUIPO"
+NEXTAUTH_URL="http://localhost:3000"
+```
 
-## Deploy on Vercel
+------------------------------------------------------------------------
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🗄️ 3. Configuración de Base de Datos
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Crear las tablas (Migraciones)
+
+``` bash
+npx prisma migrate dev --name init
+```
+
+### Poblar datos de prueba (Seed)
+
+``` bash
+npx prisma db seed
+```
+
+Si ves el mensaje **🚀 Sembrado completo**, todo salió correctamente.
+
+------------------------------------------------------------------------
+
+## ▶️ 4. Ejecutar el Proyecto
+
+``` bash
+npm run dev
+```
+
+Abre tu navegador en: 👉 http://localhost:3000
+
+------------------------------------------------------------------------
+
+## 🔑 5. Credenciales de Acceso
+
+El sistema incluye usuarios de prueba.
+
+> Nota: Para iniciar sesión, verifica que el hash en `prisma/seed.ts`
+> corresponda a una contraseña conocida o registra un usuario nuevo.
+
+-   Registro: http://localhost:3000/register
+-   Login: http://localhost:3000/login
+
+Recomendación: registra un nuevo usuario y selecciona el rol
+**Vendedor**.
+
+------------------------------------------------------------------------
+
+## 🧪 6. Ejecución de Pruebas
+
+### A. Pruebas Unitarias
+
+``` bash
+npm test
+```
+
+### B. Pruebas End-to-End (Playwright)
+
+``` bash
+npx playwright test
+```
+
+Reporte visual:
+
+``` bash
+npx playwright show-report
+```
+
+------------------------------------------------------------------------
+
+## ⚠️ Solución de Problemas Comunes
+
+### Error: `connect ECONNREFUSED 127.0.0.1:3306`
+
+-   **Causa:** MySQL apagado
+-   **Solución:** Inicia el servicio en XAMPP o Docker
+
+### Error: `Authentication failed` al hacer seed
+
+-   **Causa:** Credenciales incorrectas en `.env`
+-   **Solución:** Verifica `DATABASE_URL`
+
+### Error de Params Promise en detalle de producto
+
+-   **Causa:** Uso de Next.js 15
+-   **Solución:** Usa `await params` en `page.tsx` (ya corregido)
+
+------------------------------------------------------------------------
+
+## 📂 Estructura del Proyecto
+
+    perezcortes-vibemarket/
+    ├── README.md
+    ├── eslint.config.mjs
+    ├── jest.config.js
+    ├── jest.prisma.ts
+    ├── jest.setup.js
+    ├── next.config.ts
+    ├── package.json
+    ├── playwright.config.ts
+    ├── postcss.config.mjs
+    ├── tailwind.config.ts
+    ├── tsconfig.json
+    ├── __tests__/
+    │   ├── example.test.tsx
+    │   └── api/
+    ├── e2e/
+    ├── prisma/
+    │   ├── schema.prisma
+    │   ├── seed.ts
+    │   └── migrations/
+    ├── src/
+    │   ├── middleware.ts
+    │   ├── app/
+    │   ├── components/
+    │   ├── lib/
+    │   └── types/
+    └── test-utils/
+
+------------------------------------------------------------------------
+
+© 2026 **VibeMarket Dev Team**
