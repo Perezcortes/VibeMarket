@@ -75,7 +75,6 @@ model User {
   assignedTickets SupportTicket[] @relation("AssignedSupport")
   reviews       Review[]
   ticketMessages TicketMessage[]  @relation("SenderMessages")
-  coupons Coupon[] @relation("SellerCoupons")
 
   @@map("users")
 }
@@ -153,6 +152,7 @@ model Order {
   address_id   String
   total_amount Decimal     @default(0) @db.Decimal(12, 2)
   status       OrderStatus @default(pendiente)
+  dispute      Dispute?
 
   // Relaciones
   buyer        User        @relation("BuyerOrders", fields: [buyer_id], references: [id])
@@ -161,6 +161,8 @@ model Order {
   history      OrderStatusHistory[]
   items        OrderItem[]
   payments     Payment[]
+  returnRequest ReturnRequest?
+  
 
   @@map("orders")
 }
@@ -259,19 +261,4 @@ model TicketMessage {
   sender    User          @relation("SenderMessages", fields: [sender_id], references: [id]) 
 
   @@map("ticket_messages")
-}
-model Coupon {
-  id           String       @id @default(uuid())
-  seller_id    String
-  code         String       @unique @db.VarChar(50)
-  type         DiscountType @default(porcentaje)
-  value        Decimal      @db.Decimal(10, 2)
-  expires_at   DateTime?    @db.Timestamp(0) // US004-A: Vigencia
-  is_active    Boolean      @default(true)   // US004-C: Estado
-  created_at   DateTime     @default(now()) @db.Timestamp(0)
-
-  // Relación con el vendedor (User)
-  seller       User         @relation("SellerCoupons", fields: [seller_id], references: [id])
-
-  @@map("coupons")
 }
