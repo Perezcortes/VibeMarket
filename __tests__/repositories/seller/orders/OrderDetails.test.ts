@@ -7,7 +7,7 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-describe("OrderDetailPersistenceRepository", () => {
+describe("OrderDetailPersistenceRepository (USOO3-C)", () => {
   it("debe incluir productos, dirección, comprador y pagos con la estructura correcta", async () => {
     await OrderDetailPersistenceRepository.findOrderDetailById("order_abc");
 

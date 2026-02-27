@@ -9,7 +9,7 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-describe("OrderPersistenceRepository", () => {
+describe("OrderPersistenceRepository (USOO3-B)", () => {
   const orderId = "1";
   const sellerId = "user_vendedor";
 
