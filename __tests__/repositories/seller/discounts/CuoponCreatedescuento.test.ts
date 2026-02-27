@@ -8,29 +8,31 @@ jest.mock('@/lib/prisma', () => ({
   },
 }));
 
-describe('CouponCreateRepository (US004-A): Vigencia y Estado)', () => {
+describe('CouponCreateRepository (US004-B: Reglas de Descuento)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('debe asignar correctamente la fecha de expiración y nacer como activo', async () => {
+  it('debe crear un cupón con sus reglas de descuento básicas y código en mayúsculas', async () => {
     const inputData = {
       seller_id: 'vendedor-123',
-      code: 'VERANO',
-      type: DiscountType.porcentaje, 
-      value: 10.00,                 
+      code: 'navidad2026', 
+      type: DiscountType.monto_fijo, 
+      value: 150.00,
       expires_at: new Date('2026-12-31T23:59:59Z'), 
     };
 
-    (prisma.coupon.create as jest.Mock).mockResolvedValue({ id: 'uuid-2', ...inputData });
+    (prisma.coupon.create as jest.Mock).mockResolvedValue({ id: 'uuid-1', ...inputData });
 
     await CouponCreateRepository.execute(inputData);
 
-    // Solo validamos lo que le importa a la US004-B
+    // Validación estricta para US004-B
     expect(prisma.coupon.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
-        expires_at: inputData.expires_at, 
-        is_active: true,                  
+        seller_id: inputData.seller_id,
+        code: 'NAVIDAD2026', 
+        type: inputData.type,
+        value: inputData.value,
       })
     }));
   });
