@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { ReceiptRepository } from "@/repositories/buyer/comprobante/generaPDF.respository";
+import { ReceiptRepository } from "@/repositories/buyer/comprobante/generaPDF.repository";
 //ejecucion npm test __tests__/repositories/courier/comprobante/generaPDF.test.ts
 // Mandamos a mimir a Prisma
 jest.mock("@/lib/prisma", () => ({

@@ -1,40 +1,72 @@
 import { ValidaCuponRepository } from "@/repositories/buyer/cupon/validaCupon.repository";
 import { prisma } from "@/lib/prisma";
 
-//ejecucion npm test -- __tests__/repositories/buyer/cupon/validaCupon.test.ts
-// Mockeamos a Prisma (Recuerda cambiar "cupon" si tu modelo se llama distinto)
+// ejecucion: npm test -- __tests__/repositories/buyer/cupon/validaCupon.test.ts
+
+// 1. Mockeamos a Prisma (Nota que ahora usamos 'coupon' en lugar de 'cupon')
 jest.mock("@/lib/prisma", () => ({
   prisma: {
-    cupon: {
+    coupon: {
       findUnique: jest.fn(),
     },
   },
 }));
 
 describe("US012-G - Validación de cupón", () => {
-  // Como tu ID en MySQL es int(11), usamos un número real (ej. 1), no un string
-  const mockCouponId = 1; 
+  // 2. Actualizamos el ID: Ahora es un UUID (String), no un número
+  const mockCouponId = "a1b2c3d4-e5f6-7890-1234-567890abcdef";
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it("Debe buscar el cupón por ID y regresar únicamente su estado", async () => {
-    // 1. Preparamos la respuesta falsa de la base de datos (ej. un cupón activo)
-    const mockDbResponse = { estado: "activo" };
+  it("Debe retornar 'activo' si el cupón está habilitado y la fecha es futura", async () => {
+    // Simulamos respuesta de DB: Cupón activo y vence mañana
+    const mockDbResponse = { 
+      is_active: true, 
+      expires_at: new Date(Date.now() + 86400000) // Fecha futura (+1 día)
+    };
 
-    (prisma.cupon.findUnique as jest.Mock).mockResolvedValue(mockDbResponse);
+    (prisma.coupon.findUnique as jest.Mock).mockResolvedValue(mockDbResponse);
 
-    // 2. Ejecutamos nuestra función del repositorio
+    // Ejecutamos
     const result = await ValidaCuponRepository.getCouponState(mockCouponId);
 
-    // 3. Verificamos que el espía haya buscado con el ID correcto y el "select"
-    expect(prisma.cupon.findUnique).toHaveBeenCalledWith({
+    // Verificamos que llamó a prisma con los campos nuevos
+    expect(prisma.coupon.findUnique).toHaveBeenCalledWith({
       where: { id: mockCouponId },
-      select: { estado: true },
+      select: { is_active: true, expires_at: true },
     });
 
-    // 4. Verificamos que el resultado sea exactamente el estado que simulamos
-    expect(result).toEqual(mockDbResponse);
+    // Esperamos que tu lógica traduzca esto a 'activo'
+    expect(result).toEqual("activo");
+  });
+
+  it("Debe retornar 'expirado' si la fecha de vencimiento ya pasó", async () => {
+    // Simulamos respuesta de DB: Cupón activo pero venció ayer
+    const mockDbResponse = { 
+      is_active: true, 
+      expires_at: new Date(Date.now() - 86400000) // Fecha pasada (-1 día)
+    };
+
+    (prisma.coupon.findUnique as jest.Mock).mockResolvedValue(mockDbResponse);
+
+    const result = await ValidaCuponRepository.getCouponState(mockCouponId);
+
+    expect(result).toEqual("expirado");
+  });
+
+  it("Debe retornar 'inactivo' si el vendedor lo desactivó manualment (is_active: false)", async () => {
+    // Simulamos respuesta de DB: Cupón desactivado manualmente
+    const mockDbResponse = { 
+      is_active: false, 
+      expires_at: new Date(Date.now() + 86400000) 
+    };
+
+    (prisma.coupon.findUnique as jest.Mock).mockResolvedValue(mockDbResponse);
+
+    const result = await ValidaCuponRepository.getCouponState(mockCouponId);
+
+    expect(result).toEqual("inactivo");
   });
 });

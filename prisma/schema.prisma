@@ -148,6 +148,7 @@ model Address {
   @@map("addresses")
 }
 
+
 model Order {
   id           String      @id @default(uuid())
   buyer_id     String
@@ -156,6 +157,7 @@ model Order {
   total_amount Decimal     @default(0) @db.Decimal(12, 2)
   status       OrderStatus @default(pendiente)
   dispute      Dispute?
+  evidency     Bytes?                @db.MediumBlob
 
   // Relaciones
   buyer        User        @relation("BuyerOrders", fields: [buyer_id], references: [id])
@@ -165,6 +167,9 @@ model Order {
   items        OrderItem[]
   payments     Payment[]
   returnRequest ReturnRequest?
+  @@index([address_id], map: "orders_address_id_fkey")
+  @@index([buyer_id], map: "orders_buyer_id_fkey")
+  @@index([courier_id], map: "orders_courier_id_fkey")
   
 
   @@map("orders")
