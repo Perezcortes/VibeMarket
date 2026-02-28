@@ -48,7 +48,10 @@ enum PaymentStatus {
   rechazado
   reembolsado
 }
-
+enum DiscountType {
+  porcentaje
+  monto_fijo
+}
 // =======================
 // MODELOS (Tablas)
 // =======================
@@ -72,7 +75,12 @@ model User {
   assignedTickets SupportTicket[] @relation("AssignedSupport")
   reviews       Review[]
   ticketMessages TicketMessage[]  @relation("SenderMessages")
+  cart          Cart?
+  favorites     Favorite[]
 
+  coupons Coupon[] @relation("SellerCoupons")
+  reportedIncidents TechnicalIncident[] @relation("ReporterIncidents")
+  moderatedDisputes Dispute[] @relation("ModeratorDisputes")
   @@map("users")
 }
 
@@ -111,6 +119,8 @@ model Product {
   images      ProductImage[]
   orderItems  OrderItem[]
   reviews     Review[]
+  cartItems   CartItem[]
+  favorites   Favorite[]
 
   @@map("products")
 }
@@ -142,6 +152,7 @@ model Address {
   @@map("addresses")
 }
 
+
 model Order {
   id           String      @id @default(uuid())
   buyer_id     String
@@ -149,6 +160,8 @@ model Order {
   address_id   String
   total_amount Decimal     @default(0) @db.Decimal(12, 2)
   status       OrderStatus @default(pendiente)
+  dispute      Dispute?
+  evidency     Bytes?                @db.MediumBlob
 
   // Relaciones
   buyer        User        @relation("BuyerOrders", fields: [buyer_id], references: [id])
@@ -157,6 +170,11 @@ model Order {
   history      OrderStatusHistory[]
   items        OrderItem[]
   payments     Payment[]
+  returnRequest ReturnRequest?
+  @@index([address_id], map: "orders_address_id_fkey")
+  @@index([buyer_id], map: "orders_buyer_id_fkey")
+  @@index([courier_id], map: "orders_courier_id_fkey")
+  
 
   @@map("orders")
 }
@@ -255,4 +273,137 @@ model TicketMessage {
   sender    User          @relation("SenderMessages", fields: [sender_id], references: [id]) 
 
   @@map("ticket_messages")
+}
+
+model Coupon {
+  id           String       @id @default(uuid())
+  seller_id    String
+  code         String       @unique @db.VarChar(50)
+  type         DiscountType @default(porcentaje)
+  value        Decimal      @db.Decimal(10, 2)
+  expires_at   DateTime?    @db.Timestamp(0) // US004-A: Vigencia
+  is_active    Boolean      @default(true)   // US004-C: Estado
+  created_at   DateTime     @default(now()) @db.Timestamp(0)
+
+  // Relación con el vendedor (User)
+  seller       User         @relation("SellerCoupons", fields: [seller_id], references: [id])
+
+  @@map("coupons")
+}
+
+// ==========================================
+// US014-B: Log de Incidencias Técnicas
+// ==========================================
+
+model TechnicalIncident {
+  id           String         @id @default(uuid())
+  title        String         @db.VarChar(150)
+  description  String         @db.Text
+  priority     TicketPriority @default(media)
+  status       TicketStatus   @default(abierto)
+  reported_by  String         // ID del usuario de soporte (User)
+  
+  // Relación con la tabla User
+  reporter     User           @relation("ReporterIncidents", fields: [reported_by], references: [id])
+  
+  created_at   DateTime       @default(now()) @db.Timestamp(0)
+  updated_at   DateTime       @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@map("technical_incidents")
+}
+
+
+// ==========================================
+// US014-C: MOdulo de Mediación de Disputas
+// ==========================================
+model Dispute {
+  id           String   @id @default(uuid())
+  order_id     String   @unique
+  reason       String   @db.Text
+  resolution   String?  @db.Text
+  status       String   @default("abierta") // abierta, en_mediacion, resuelta
+  moderator_id String?  
+  
+  // Relaciones
+  order        Order    @relation(fields: [order_id], references: [id])
+  moderator    User?    @relation("ModeratorDisputes", fields: [moderator_id], references: [id])
+  
+  created_at   DateTime @default(now()) @db.Timestamp(0)
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@map("disputes")
+}
+
+model FaqKnowledge {
+  id          String   @id @default(uuid())
+  question    String   @db.VarChar(255)
+  answer      String   @db.Text
+  category    String   @db.VarChar(50)
+  times_used  Int      @default(0)
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+
+  @@map("faq_knowledge")
+}
+
+// ==========================================
+// US0013 Solicitud de devoluciones
+// ==========================================
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+model ReturnRequest {
+  id          String       @id @default(cuid())
+  orderId     String       @unique
+  order       Order        @relation(fields: [orderId], references: [id])
+  reason      String
+  description String?
+  status      ReturnStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+}
+
+model Cart {
+  id         String     @id @default(uuid())
+  user_id    String     @unique // Un usuario solo tiene un carrito activo
+  created_at DateTime   @default(now()) @db.Timestamp(0)
+  updated_at DateTime   @default(now()) @updatedAt @db.Timestamp(0)
+
+  // Relaciones
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  items      CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id         String   @id @default(uuid())
+  cart_id    String
+  product_id String
+  quantity   Int      @default(1)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+
+  // Relaciones
+  cart       Cart     @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([cart_id, product_id]) // Evita duplicados del mismo producto en el mismo carrito
+  @@map("cart_items")
+}
+model Favorite {
+  id         String   @id @default(uuid())
+  user_id    String
+  product_id String
+  created_at DateTime @default(now()) @db.Timestamp(0)
+
+  // Relaciones
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, product_id]) // Evita que un usuario marque el mismo producto dos veces
+  @@map("favorites")
 }

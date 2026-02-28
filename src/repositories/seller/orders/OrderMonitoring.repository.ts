@@ -5,11 +5,14 @@ import { prisma } from "@/lib/prisma";
  * "Como vendedor, quiero ver pedidos recibidos, para estar al pendiente."
  */
 export const OrderMonitoringRepository = {
-  // Obtiene los pedidos donde el vendedor tenga al menos un producto vendido
+  /**
+   * Obtiene los pedidos donde el vendedor tiene participación,
+   * filtrando los items para mostrar solo lo que le pertenece.
+   */
   async findReceivedOrders(sellerId: string) {
     return prisma.order.findMany({
-      // Filtra pedidos que tengan items
-      // cuyo producto pertenezca al vendedor
+      // 1. FILTRO DE PEDIDOS:
+      // Selecciona solo las órdenes que contienen al menos un producto del vendedor.
       where: {
         items: {
           some: {
@@ -20,16 +23,22 @@ export const OrderMonitoringRepository = {
         }
       },
 
-      // Incluye información relacionada al pedido
+      // 2. INCLUSIÓN DE DATOS (JOINS):
       include: {
-        // Items del pedido + producto
+        // FILTRO DE PRIVACIDAD (Línea clave):
+        // Solo incluimos los items que pertenecen a este vendedor específico.
         items: {
+          where: {
+            product: {
+              seller_id: sellerId
+            }
+          },
           include: {
             product: true
           }
         },
 
-        // Información  del comprador
+        // Datos del comprador (solo campos necesarios)
         buyer: {
           select: {
             full_name: true,
@@ -37,14 +46,17 @@ export const OrderMonitoringRepository = {
           }
         },
 
-        // Dirección de envío
+        // Dirección completa de envío
         address: true
       },
 
-      // Ordena del pedido más reciente al más antiguo
+      // 3. ORDENAMIENTO:
+      // Lo más nuevo aparece al principio de la lista.
       orderBy: {
         id: "desc"
       }
     });
   }
 };
+
+
