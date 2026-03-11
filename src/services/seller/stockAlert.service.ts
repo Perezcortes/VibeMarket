@@ -58,5 +58,5 @@ export class StockAlertService {
   }
 }
 
-// Exportamos la instancia para ser usada en el API
+// Exportamos
 export const stockAlertService = new StockAlertService();
