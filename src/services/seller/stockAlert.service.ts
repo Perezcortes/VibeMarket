@@ -23,7 +23,7 @@ export class StockAlertService {
     }
 
     try {
-      // 1. Delegamos la consulta técnica a la capa de persistencia
+      // 1. Consulta a la capa de persistencia
       const isCritical = await StockAlertRepository.checkAndTriggerLowStockAlert(productId, threshold);
 
       // 2. Lógica de Negocio: ¿Qué hacemos si el stock es crítico?
