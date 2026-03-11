@@ -28,7 +28,7 @@ export class StockAlertService {
 
       // 2. Lógica de Negocio: ¿Qué hacemos si el stock es crítico?
       if (isCritical) {
-        // Aquí podrías integrar un servicio de correos o push notifications en el futuro
+      // se reporta un mensaje
        console.warn(`[StockAlertService]: El producto ${productId} requiere resurtido inmediato.`);
         
         return {
