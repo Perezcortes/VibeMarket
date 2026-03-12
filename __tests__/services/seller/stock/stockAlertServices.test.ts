@@ -7,7 +7,7 @@
  * FECHA: 5 de marzo de 2026
  */
 
-import { OrderStockService } from "@/services/seller/orderStock.service";
+import { OrderStockService } from "@/services/seller/stock/orderStock.service";
 import { OrderStockRepository } from "@/repositories/seller/stock/orderStock.repository";
 
 jest.mock("@/repositories/seller/stock/orderStock.repository");

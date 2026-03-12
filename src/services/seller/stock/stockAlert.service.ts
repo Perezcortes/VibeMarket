@@ -3,7 +3,7 @@
  * Módulo: Gestión de Inventario / Alertas
  * Historia de Usuario: US002-C: Creación de alerta de stock bajo
  * AUTOR (Responsable): Leonides Lopez Robles
- * COPILOTO (XP Pair): Ari
+ * COPILOTO (XP Pair): Ari Ariadna Ramirez
  * FECHA: 5 de marzo de 2026
  */
 
@@ -28,7 +28,7 @@ export class StockAlertService {
 
       // 2. Lógica de Negocio: ¿Qué hacemos si el stock es crítico?
       if (isCritical) {
-        // Aquí podrías integrar un servicio de correos o push notifications en el futuro
+
        console.warn(`[StockAlertService]: El producto ${productId} requiere resurtido inmediato.`);
         
         return {

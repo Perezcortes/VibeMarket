@@ -3,7 +3,7 @@
  * Módulo: Gestión de InventariO
  * Historia de Usuario: US002-B: Decremento automático de stock
  * AUTOR (Responsable): Leonides Lopez Robles
- * COPILOTO (XP Pair): Ari
+ * COPILOTO (XP Pair): Ari Ariadna Ramirez
  * FECHA: 5 de marzo de 2026
  */
 
