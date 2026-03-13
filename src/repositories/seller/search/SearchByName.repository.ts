@@ -15,7 +15,7 @@ export const ProductSearchRepository = {
     return prisma.product.findMany({
       where: {
         is_active: true,
-        // Búsqueda por nombre (insensible a mayúsculas/minúsculas en la mayoría de DBs)
+        // Eliminamos 'mode' porque en SQLite no existe/no es necesario
         name: {
           contains: query,
         },
@@ -38,15 +38,10 @@ export const ProductSearchRepository = {
           }
         }
       },
-      take: 10, // Limitamos a los 10 resultados más relevantes para sugerencias rápidas
+      take: 10, 
       orderBy: {
-        _relevance: {
-          fields: ['name'],
-          search: query,
-          sort: 'desc'
-        }
+        name: 'asc' 
       }
     });
   }
-
 };
