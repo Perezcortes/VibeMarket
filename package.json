@@ -41,8 +41,7 @@
     "typescript": "^5.9.3",
     "whatwg-fetch": "^3.6.20"
   },
-
-  "prisma": { 
+  "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   }
 }
