@@ -1,9 +1,10 @@
 /**
- * PRUEBAS UNITARIAS — US003-D
- * Módulo: Notificación de Cambio de Estado
- * COPILOTO (XP Pair): Ariadna Ramirez
- *
- * Ejecutar: npx jest OrderNotification.service.test.ts
+ * SISTEMA PARA TIENDA EN LÍNEA
+ * Módulo: Notificación de Cambio de Estado (Pruebas Unitarias)
+ * Historia de Usuario: US003-D: Notificación de Cambio de Estado
+ * AUTOR (Responsable): Leonides Lopez Robles
+ * COPILOTO (XP Pair): Ari Ramirez
+ * FECHA: 11 de marzo de 2026
  */
 
 import { OrderNotificationService } from "@/services/seller/orders/Ordernotification.service";

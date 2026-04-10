@@ -3,7 +3,7 @@
  * Módulo: Gestión de Inventario (Pruebas Unitarias)
  * Historia de Usuario: US002-B: Decremento automático de stock
  * AUTOR (Responsable): Leonides Lopez Robles
- * COPILOTO (XP Pair): Ari
+ * COPILOTO (XP Pair): Ari Ramirez
  * FECHA: 5 de marzo de 2026
  */
 

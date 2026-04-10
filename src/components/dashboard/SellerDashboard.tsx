@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import CatalogManager from "@/components/dashboard/seller/CatalogManager";
+import OrdersManager from "@/components/dashboard/seller/orderManager";
 
 export default function SellerDashboard({ user }: { user: any }) {
   const [view, setView] = useState("overview");
@@ -124,13 +125,14 @@ export default function SellerDashboard({ user }: { user: any }) {
             </div>
         )}
 
-        {/* 2. Catálogo (COMPONENTE IMPORTADO) */}
-        {view === 'catalog' && (
-            <CatalogManager />
-        )}
+        {/* 2. Catálogo */}
+        {view === 'catalog' && <CatalogManager />}
 
-        {/* 3. Placeholder */}
-        {(view !== 'overview' && view !== 'catalog') && (
+        {/* 3. Pedidos */}
+        {view === 'orders' && <OrdersManager />}
+
+        {/* Otros (placeholders para marketing, etc.) */}
+        {(view !== 'overview' && view !== 'catalog' && view !== 'orders' && view !== 'history') && (
             <div className="flex flex-col items-center justify-center h-96 bg-white dark:bg-[#1a1010] rounded-3xl border-2 border-dashed border-gray-200">
                 <span className="material-symbols-outlined text-4xl text-gray-400">construction</span>
                 <p className="text-gray-500 mt-2">Módulo {view} en construcción.</p>
