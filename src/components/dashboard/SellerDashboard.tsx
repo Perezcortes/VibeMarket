@@ -2,6 +2,13 @@
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import CatalogManager from "@/components/dashboard/seller/CatalogManager";
+import OrdersManager from "@/components/dashboard/seller/orderManager";
+// --- NUEVA INTERFAZ PARA INTEGRAR CON EL PRESENTER ---
+interface SellerDashboardProps {
+  user: any;
+  orders: any[];    // Datos de HU008 formateados por el Presenter
+  stats: any;       // Resumen de gastos de HU008
+}
 
 // --- NUEVA INTERFAZ PARA INTEGRAR CON EL PRESENTER ---
 interface SellerDashboardProps {
@@ -153,8 +160,13 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
         {/* 2. Catálogo */}
         {view === 'catalog' && <CatalogManager />}
 
+         {/* 3. Pedidos */}
+        {view === 'orders' && <OrdersManager />}
+
+
         {/* 3. Otros */}
-        {(view !== 'overview' && view !== 'catalog' && view !== 'history') && (
+        {(view !== 'overview' && view !== 'catalog' && view !== 'history' && view !== 'orders' ) && (
+       
             <div className="flex flex-col items-center justify-center h-96 bg-white dark:bg-[#1a1010] rounded-3xl border-2 border-dashed border-gray-200">
                 <span className="material-symbols-outlined text-4xl text-gray-400">construction</span>
                 <p className="text-gray-500 mt-2">Módulo {view} en construcción.</p>
