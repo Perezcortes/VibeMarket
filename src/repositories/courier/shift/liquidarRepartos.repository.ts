@@ -24,10 +24,30 @@ export class LiquidarRepartosRepository {
   /**
    * Cambia el estado de un pedido a 'entregado' (Liquidar el pedido)
    */
+
   static async markOrderAsDelivered(orderId: string) {
-    return await prisma.order.update({
-      where: { id: orderId },
-      data: { status: "entregado" },
-    });
+
+    // Desestructuramos el resultado de la transacción
+    const [updatedOrder, historyRecord] = await prisma.$transaction([
+
+      // Operación 1: Actualizar la orden
+      prisma.order.update({
+        where: { id: orderId },
+        data: { status: "entregado" },
+      }),
+
+      // Operación 2: Crear el historial
+      prisma.orderStatusHistory.create({
+        data: {
+          order_id: orderId,
+          status: "entregado",
+        //*changed_by: "Sistema Repartidor",*/
+        }
+      })
+    ]);
+
+    return updatedOrder;
   }
+
+
 }
