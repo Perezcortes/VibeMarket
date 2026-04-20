@@ -30,7 +30,7 @@ export default async function SuccessPage({
 
         <div className="flex flex-col gap-3">
           <Link 
-            href="/dashboard" 
+            href="/dashboard?seccion=compras" 
             className="w-full bg-white text-black font-bold py-4 rounded-xl hover:bg-zinc-200 transition-all"
           >
             Ver mis pedidos

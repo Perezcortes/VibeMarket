@@ -85,8 +85,24 @@ export default function ReviewPage() {
         </div>
 
         {/* Botón de Acción Final */}
+        {/* Botón de Acción Final */}
         <div className="bg-slate-900 text-white p-8 rounded-3xl h-fit">
           <h3 className="text-xl font-bold mb-4">Finalizar Compra</h3>
+          
+          {/* ✨ NUEVO: Mostramos el total a cobrar y el descuento para dar seguridad al cliente */}
+          <div className="space-y-2 mb-6 border-b border-slate-700 pb-4">
+            {Number(checkoutData.descuentoAplicado) > 0 && (
+              <div className="flex justify-between text-green-400 text-sm font-bold">
+                <span>Cupón ({checkoutData.cuponUsado})</span>
+                <span>-${Number(checkoutData.descuentoAplicado).toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-2xl font-black">
+              <span>Total:</span>
+              <span className="text-red-500">${Number(checkoutData.totalACobrar).toFixed(2)}</span>
+            </div>
+          </div>
+
           <p className="text-slate-400 text-sm mb-6">
             Al hacer clic en el botón, aceptas los términos y condiciones de VibeMarket. El cobro se realizará de forma inmediata.
           </p>

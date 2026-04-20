@@ -1,8 +1,15 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 
 export default function CourierDashboard({ user }: { user: any }) {
+
+    const [showCamera, setShowCamera] = useState(false);
+    const [capturedImage, setCapturedImage] = useState<string | null>(null);
+    const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [view, setView] = useState("route");
     const [isOnline, setIsOnline] = useState(true);
     const [routes, setRoutes] = useState([
@@ -11,7 +18,85 @@ export default function CourierDashboard({ user }: { user: any }) {
         { id: "3", address: "Calle Liverpool 20", time: "12:00 PM", distance: "0.5 km", visitOrder: 3, currentStatus: "pagado" },
         { id: "4", address: "Calle Cafe 45", time: "18:00 PM", distance: "7.1 km", visitOrder: 3, currentStatus: "pendiente" },
     ]);
-    // ✨ NUEVO ESTADO: Para saber si estamos procesando la liquidación
+
+    // --- Lógica de la Cámara ---
+    const startCamera = async (orderId: string) => {
+        setCurrentOrderId(orderId);
+        setShowCamera(true);
+        setCapturedImage(null);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (err) {
+            alert("No se pudo acceder a la cámara");
+            setShowCamera(false);
+        }
+    };
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                // 2. Guardar la imagen seleccionada
+                setCapturedImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const takePhoto = () => {
+        if (videoRef.current && canvasRef.current) {
+            const context = canvasRef.current.getContext("2d");
+            canvasRef.current.width = videoRef.current.videoWidth;
+            canvasRef.current.height = videoRef.current.videoHeight;
+            context?.drawImage(videoRef.current, 0, 0);
+            const dataUrl = canvasRef.current.toDataURL("image/jpeg");
+            setCapturedImage(dataUrl);
+
+            // Detener la cámara tras capturar
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+        }
+    };
+
+    const handleUploadEvidency = async () => {
+        if (!capturedImage || !currentOrderId) return;
+
+        try {
+            // Convertir Base64 a Blob
+            const response = await fetch(capturedImage);
+            const blob = await response.blob();
+
+            const formData = new FormData();
+            formData.append("orderId", currentOrderId);
+            formData.append("image", blob, "evidencia.jpg");
+
+            const res = await fetch("/api/courier/evidency", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (res.ok) {
+                alert("✅ Foto subida y evidencia guardada.");
+                setShowCamera(false);
+                setCapturedImage(null);
+            } else {
+                alert("Error al subir la foto.");
+            }
+        } catch (error) {
+            alert("Error de red.");
+        }
+    };
+
+
     const [isLiquidating, setIsLiquidating] = useState(false);
     const handleOrderChange = (id: string, newOrder: number) => {
         const updated = routes.map(r => r.id === id ? { ...r, visitOrder: newOrder } : r)
@@ -41,9 +126,8 @@ export default function CourierDashboard({ user }: { user: any }) {
             if (res.ok) {
                 // ¡Éxito! Aquí puedes poner un toast o alerta bonita
                 alert(`¡Éxito! ${data.message}`);
+                startCamera(orderId);
 
-                // 👉 A FUTURO: Aquí agregarías la lógica para borrar este pedido 
-                // de la vista y subir el siguiente pedido de "En cola" hacia arriba.
             } else {
                 alert(`Error al liquidar: ${data.error}`);
             }
@@ -236,9 +320,82 @@ export default function CourierDashboard({ user }: { user: any }) {
                 )}
 
             </main>
+
+            {showCamera && (
+                <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-4">
+                    <h2 className="text-white font-bold mb-4 text-lg">Documentar Entrega - ID: {currentOrderId}</h2>
+
+                    {/* 1. ¡ESTO ES LO QUE FALTABA!: El input real que abre la galería */}
+                    <input
+                        type="file"
+                        id="gallery-upload"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileChange}
+                    />
+
+                    <div className="relative w-full max-w-md aspect-[3/4] bg-gray-900 rounded-3xl overflow-hidden shadow-2xl border-2 border-amber-400">
+                        {!capturedImage ? (
+                            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                        ) : (
+                            <img src={capturedImage} className="w-full h-full object-cover" />
+                        )}
+                        <canvas ref={canvasRef} className="hidden" />
+                    </div>
+
+                    <div className="mt-8 flex gap-4 w-full max-w-md">
+                        {!capturedImage ? (
+                            <button
+                                onClick={takePhoto}
+                                aria-label="Tomar Foto"
+                                className="w-full bg-amber-400 text-black font-black py-4 rounded-2xl flex items-center justify-center gap-2"
+                            >
+                                <span className="material-symbols-outlined">photo_camera</span>
+                                Capturar Foto
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => startCamera(currentOrderId!)}
+                                    className="flex-1 bg-gray-700 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined">cached</span>
+                                    Retomar
+                                </button>
+                                <button
+                                    onClick={handleUploadEvidency}
+                                    aria-label="Subir Evidencia"
+                                    className="flex-1 bg-green-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined">cloud_upload</span>
+                                    Subir
+                                </button>
+                            </>
+                        )}
+                    </div>
+
+                    {/* 2. El Label que hace la magia de abrir la galería en Ubuntu */}
+                    <label
+                        htmlFor="gallery-upload"
+                        className="mt-6 text-center text-gray-400 text-sm underline cursor-pointer hover:text-amber-400 transition-colors"
+                        onClick={() => {
+                            // Apagamos la cámara para liberar recursos de tu laptop
+                            if (videoRef.current && videoRef.current.srcObject) {
+                                const stream = videoRef.current.srcObject as MediaStream;
+                                stream.getTracks().forEach(track => track.stop());
+                            }
+                        }}
+                    >
+                        Seleccionar de la Galería
+                    </label>
+
+                   
+                </div>
+            )}
         </div>
-    );
+    )
 }
+
 
 // --- SUBCOMPONENTES ---
 
