@@ -1,10 +1,40 @@
+/**
+ * SISTEMA PARA TIENDA EN LÍNEA
+ * Módulo: Capa de Presentación (UI) - ADMINISTRACIÓN Y SEGURIDAD
+ * Historia de Usuario: US005 (A, B, D, E) - Reportes del Dashboard
+ * AUTOR (Responsable): Jose Perez
+ * COPILOTO (XP Pair): Yamil Morales
+ * FECHA: 24/03/2026
+ */
+
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import UserManagement from "./admin/UserManagement"; 
 
 export default function AdminDashboard({ user }: { user: any }) {
   const [view, setView] = useState("overview");
+  
+  // Estados para los reportes (US005)
+  const [reportData, setReportData] = useState<any>(null);
+  const [loadingReports, setLoadingReports] = useState(true);
+
+  // Consumir la API de reportes al cargar el componente
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const res = await fetch("/api/admin/reports");
+        const json = await res.json();
+        setReportData(json);
+      } catch (error) {
+        console.error("Error cargando reportes", error);
+      } finally {
+        setLoadingReports(false);
+      }
+    };
+
+    fetchReports();
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans">
@@ -91,11 +121,10 @@ export default function AdminDashboard({ user }: { user: any }) {
                     {view === 'users' && 'Gestión de Usuarios'}
                     {view === 'products' && 'Catálogo Maestro'}
                     {view === 'orders' && 'Historial de Órdenes'}
-                    {/* Fallback para otros títulos */}
                     {!['overview', 'users', 'products', 'orders'].includes(view) && 'Panel de Administración'}
                 </h2>
                 <p className="text-gray-500 mt-1">
-                    Hola {user?.name}, tienes el control total de la plataforma.
+                    Hola {user?.name || "Admin"}, tienes el control total de la plataforma.
                 </p>
             </div>
             <div className="text-sm font-bold text-gray-400 bg-white px-4 py-2 rounded-full border border-gray-200">
@@ -106,31 +135,31 @@ export default function AdminDashboard({ user }: { user: any }) {
         {/* VISTA: RESUMEN (OVERVIEW) */}
         {view === 'overview' && (
             <div className="space-y-8 animate-in fade-in">
-                {/* Tarjetas Superiores */}
+                {/* Tarjetas Superiores (KPIs Dinámicos) */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <StatCard 
-                        title="Usuarios Totales" 
-                        value="24,592" 
-                        trend="+12% mes actual" 
-                        icon="group" 
+                        title="Ventas del Día" 
+                        value={loadingReports ? "..." : `$${reportData?.dailySales?.totalVentas?.toLocaleString() || "0"}`} 
+                        trend={loadingReports ? "Cargando..." : `Fecha: ${reportData?.dailySales?.fecha || "Hoy"}`} 
+                        icon="payments" 
                         color="text-blue-600" 
                         bg="bg-blue-50"
                     />
                     <StatCard 
-                        title="Volumen de Ventas" 
-                        value="$1,204,500" 
-                        trend="+$84k esta semana" 
-                        icon="payments" 
-                        color="text-primary" 
-                        bg="bg-red-50"
+                        title="ROI Mensual (Est.)" 
+                        value={loadingReports ? "..." : (reportData?.financial?.roiMensual || "0%")} 
+                        trend="Cálculo sobre ingresos" 
+                        icon="trending_up" 
+                        color="text-green-600" 
+                        bg="bg-green-50"
                     />
                     <StatCard 
-                        title="Tickets Abiertos" 
-                        value="15" 
-                        trend="3 urgentes" 
-                        icon="warning" 
-                        color="text-amber-500" 
-                        bg="bg-amber-50"
+                        title="Artículos con Descuento" 
+                        value={loadingReports ? "..." : (reportData?.financial?.ventasConDescuento || "0")} 
+                        trend="Vendidos este mes" 
+                        icon="sell" 
+                        color="text-purple-600" 
+                        bg="bg-purple-50"
                     />
                 </div>
 
@@ -162,6 +191,37 @@ export default function AdminDashboard({ user }: { user: any }) {
                         </div>
                     </div>
                 </div>
+
+                {/* US005-B: Ranking de ventas por categorías */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mt-6">
+                    <h3 className="font-bold text-gray-800 mb-4">Top Categorías Más Vendidas</h3>
+                    
+                    {loadingReports ? (
+                        <p className="text-gray-500 text-sm">Cargando ranking de categorías...</p>
+                    ) : reportData?.categoryRanking && reportData.categoryRanking.length > 0 ? (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-100">
+                                <thead>
+                                    <tr>
+                                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Categoría</th>
+                                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Artículos Vendidos</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {reportData.categoryRanking.map((item: any, index: number) => (
+                                        <tr key={index} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-4 py-3 text-sm font-bold text-gray-700">{item.categoria || "Sin categoría"}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-500 font-medium">{item.cantidad || 0} unid.</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <p className="text-gray-500 text-sm italic">No hay suficientes datos de ventas para mostrar el ranking.</p>
+                    )}
+                </div>
+
             </div>
         )}
 
@@ -170,7 +230,7 @@ export default function AdminDashboard({ user }: { user: any }) {
             <UserManagement />
         )}
         
-        {/* VISTAS EN CONSTRUCCIÓN (Actualizamos la condición para excluir 'users') */}
+        {/* VISTAS EN CONSTRUCCIÓN */}
         {view !== 'overview' && view !== 'users' && (
             <div className="flex flex-col items-center justify-center h-96 bg-white rounded-3xl border border-dashed border-gray-300 text-center animate-in zoom-in-95">
                 <span className="material-symbols-outlined text-6xl text-gray-200 mb-4">construction</span>

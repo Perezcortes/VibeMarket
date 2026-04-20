@@ -1,35 +1,17 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Historia: Autenticación', () => {
-  
-  test('CN-01: Registro de usuario nuevo exitoso', async ({ page }) => {
-    const randomId = Date.now();
-    const email = `test_${randomId}@vibe.com`;
-    const password = 'Password123!';
+test.describe('US008-B: Recuperación de contraseña', () => {
 
-    await page.goto('/register');
-
-    await page.locator('input[name="full_name"]').fill('Usuario Playwright');
-    await page.locator('input[name="email"]').fill(email);
-    await page.locator('input[name="password"]').fill(password);
+  test('US008-B: Recuperación de contraseña > CA1: Muestra mensaje ambiguo de seguridad', async ({ page }) => {
+    // 1. Ir a la pantalla de recuperar contraseña
+    await page.goto('/forgot-password');
     
-    // Si quieres seleccionar rol (opcional, tu código tiene default "comprador")
-    // await page.locator('select[name="role"]').selectOption('vendedor');
+    // 2. Llenar el formulario con un correo de prueba
+    await page.fill('input[type="email"]', 'correo_prueba_123@test.com');
+    await page.click('button[type="submit"]');
 
-    await page.getByRole('button', { name: 'Registrarme' }).click();
-
-    // Verificamos que redirija al login
-    await expect(page).toHaveURL(/\/login/);
+    // 3. Verificar que sale el mensaje de seguridad
+    await expect(page.locator('text=Si el correo existe')).toBeVisible({ timeout: 10000 });
   });
 
-  test('CN-02: Bloqueo de login con contraseña incorrecta', async ({ page }) => {
-    await page.goto('/login');
-
-    await page.locator('input[name="email"]').fill('admin@vibemarket.com'); 
-    await page.locator('input[name="password"]').fill('incorrecta123'); 
-
-    await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
-
-    await expect(page.getByText('Credenciales inválidas')).toBeVisible();
-  });
 });

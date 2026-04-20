@@ -1,43 +1,38 @@
-/**
- * SISTEMA PARA TIENDA EN LÍNEA
- * Módulo: Compradores / Pago
- * Historia de Usuario: US012-G: Como comprador, quiero validar el cupón al momento del pago,
- * para saber si realmente tengo mi descuento.
- * AUTOR (Responsable): Ariadna Betsabe Espina Ramirez
- * COPILOTO (XP Pair): 
- * FECHA: 5 de marzo de 2026
- */
+// En src/services/buyer/cupon/validaCupon.service.ts
+import { ValidaCuponRepository } from "@/repositories/buyer/cupon/validaCupon.repository";
 
-import {  ValidaCuponRepository } from "@/repositories/buyer/cupon/validaCupon.repository";
-
-// Aquí inicia la lógica de la capa de servicio
 export class ValidaCuponService {
-  
-  /**
-   * Valida el estado de un cupón por su ID.
-   * @param couponId Identificador del cupón (UUID).
-   */
-  async validateCoupon(couponId: string) {
-    if (!couponId) {
-      throw new Error("Se requiere un ID de cupón válido para validar.");
+  async validateCouponForCart(code: string, cartProductIds: string[]) {
+    if (!code) throw new Error("Se requiere ingresar un código de cupón.");
+
+    const validIds = (cartProductIds || []).filter(Boolean);
+    if (validIds.length === 0) throw new Error("No hay productos válidos en el carrito.");
+
+    const coupon = await ValidaCuponRepository.getCouponByCode(code);
+    if (!coupon) throw new Error("Cupón no válido o inexistente.");
+    if (!coupon.is_active) throw new Error("Este cupón ha sido desactivado.");
+    if (coupon.expires_at && new Date(coupon.expires_at as any) < new Date()) {
+      throw new Error("Lo sentimos, este cupón ha expirado.");
     }
 
-    try {
-      // Llamamos al repositorio para obtener el estado del cupón
-      const couponState = await ValidaCuponRepository.getCouponState(couponId);
-      
-      return {
-        success: true,
-        message: `El estado del cupón es: ${couponState}.`,
-        data: couponState
-      };
-    } catch (error) {
-      // Manejo de errores
-      return {
-        success: false,
-        message: "Ocurrió un error al validar el cupón.",
-        error: error instanceof Error ? error.message : String(error)
-      };
+    const matchingProducts = await ValidaCuponRepository.getMatchingProducts(validIds, coupon.seller_id);
+    if (matchingProducts.length === 0) {
+      throw new Error("Este cupón no aplica a los productos de tu carrito.");
     }
-    }
+
+    const baseSubtotal = matchingProducts.reduce((acc, p) => acc + Number(p.price), 0);
+
+    return {
+      success: true,
+      coupon: {
+        code: coupon.code,
+        type: coupon.type,
+        value: Number(coupon.value),
+        seller_id: coupon.seller_id,
+        appliedToNames: matchingProducts.map(p => p.name).join(", "),
+        appliedProductIds: matchingProducts.map(p => p.id),
+        baseSubtotal: baseSubtotal
+      }
+    };
+  }
 }

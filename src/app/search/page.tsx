@@ -4,19 +4,18 @@ import ProductCard from "@/components/ui/ProductCard";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 
-// 1. Definimos el tipo como una Promesa
 type Props = {
   searchParams: Promise<{ q?: string }>;
 };
 
 export default async function SearchPage({ searchParams }: Props) {
+  // 1. Obtenemos la sesión del servidor
   const session = await getServerSession(authOptions);
+  const userId = session?.user?.id; // Extraemos el ID del usuario logueado
   
-  // 2. DESEMPAQUETAMOS LOS PARÁMETROS CON AWAIT
   const resolvedSearchParams = await searchParams;
   const query = resolvedSearchParams.q || "";
 
-  // Busca TODOS los productos (o filtra si hay búsqueda)
   const products = await prisma.product.findMany({
     where: {
       name: { contains: query },
@@ -45,13 +44,15 @@ export default async function SearchPage({ searchParams }: Props) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {products.map((product) => (
                     <ProductCard 
-                    key={product.id}
-                    slug={product.slug} 
-                    image={product.images[0]?.url || "inventory_2"} 
-                    title={product.name}
-                    price={product.price.toString()} 
-                    category={product.category?.name || "General"}
-                    tag={product.stock < 10 ? "¡Poco Stock!" : undefined}
+                      key={product.id}
+                      productId={product.id} 
+                      userId={userId}       
+                      slug={product.slug}
+                      image={product.images[0]?.url || "inventory_2"}
+                      title={product.name}
+                      price={product.price.toString()}
+                      category={product.category?.name || "General"}
+                      tag={product.stock < 10 ? "¡Poco Stock!" : undefined} 
                     />
                 ))}
             </div>

@@ -219,6 +219,7 @@ model Payment {
 
   // Relaciones
   order      Order         @relation(fields: [order_id], references: [id])
+  card_details PaymentCard?
 
   @@map("payments")
 }
@@ -406,4 +407,17 @@ model Favorite {
 
   @@unique([user_id, product_id]) // Evita que un usuario marque el mismo producto dos veces
   @@map("favorites")
+}
+
+
+model PaymentCard {
+  id           Int      @id @default(autoincrement())
+  payment_id   String   @unique // Relación 1:1 con el pago
+  card_name    String
+  card_number  String   // Guardaremos los 16 dígitos (en un entorno real solo se guardan los últimos 4)
+  
+  // Relación con la tabla Payment existente
+  payment      Payment  @relation(fields: [payment_id], references: [id], onDelete: Cascade)
+
+  @@map("payment_cards")
 }
