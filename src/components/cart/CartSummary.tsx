@@ -1,58 +1,85 @@
 "use client";
+import { useState, useEffect } from "react";
+import FormularioCupon from "./formularioCupon";
+import Link from "next/link";
 
 interface CartSummaryProps {
-  total: number;
+  cart: any;
 }
 
-export default function CartSummary({ total }: CartSummaryProps) {
-  const shipping = total > 500 ? 0 : 99; // Lógica de ejemplo: Envío gratis > $500
-  const finalTotal = total + shipping;
+export default function CartSummary({ cart }: CartSummaryProps) {
+  const [mounted, setMounted] = useState(false); // ✨ NUEVO: Estado de montaje
+  const [discount, setDiscount] = useState(0);
+  const [couponData, setCouponData] = useState<any>(null);
+
+  // ✨ NUEVO: Le decimos a React que ya estamos en el navegador
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleDiscount = (val: number, data: any) => {
+    setDiscount(val);
+    setCouponData(data);
+  };
+
+  // Si no ha montado, mostramos un "esqueleto" para evitar el Hydration Error
+  if (!mounted) {
+    return <div className="bg-white p-8 rounded-3xl border border-gray-100 h-96 shadow-xl sticky top-24 animate-pulse"></div>;
+  }
+
+  const shipping = cart.totalAmount > 500 ? 0 : 99;
+  const finalTotal = cart.totalAmount + shipping - discount;
 
   return (
-    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm sticky top-24">
-      <h2 className="text-xl font-black mb-6">Resumen</h2>
-      
+    <div className="bg-white p-8 rounded-3xl border border-gray-100 h-fit shadow-xl sticky top-24">
+      <h2 className="text-2xl font-black mb-6 text-gray-800">Resumen</h2>
+
       <div className="space-y-4 mb-6">
-        <div className="flex justify-between text-gray-500">
+        <div className="flex justify-between text-gray-500 font-medium">
           <span>Subtotal</span>
-          <span className="font-bold text-gray-800">${total.toFixed(2)}</span>
+          <span>${cart.totalAmount.toFixed(2)}</span>
         </div>
-        
-        <div className="flex justify-between text-gray-500">
+
+        {couponData && (
+          <div className="flex flex-col">
+            <div className="flex justify-between text-green-500 font-bold">
+              <span>Descuento ({couponData?.code})</span>
+              <span>-${discount.toFixed(2)}</span>
+            </div>
+            <span className="text-[10px] text-gray-400 italic">Aplicado a: {couponData?.appliedToNames}</span>
+          </div>
+        )}
+
+        <div className="flex justify-between text-gray-500 font-medium">
           <span>Envío</span>
-          <span className="font-bold text-gray-800">
+          <span className={shipping === 0 ? "text-green-500 font-bold" : ""}>
             {shipping === 0 ? "Gratis" : `$${shipping.toFixed(2)}`}
           </span>
         </div>
-
-        {/* Espacio para que el compañero de Cupones trabaje */}
-        <div className="pt-4">
-          <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">¿Tienes un cupón?</label>
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              placeholder="VIBE2026"
-              className="bg-slate-50 border border-gray-200 rounded-xl px-4 py-2 text-sm flex-1 focus:outline-primary"
-            />
-            <button className="bg-black text-white px-4 py-2 rounded-xl text-sm font-bold">Aplicar</button>
-          </div>
-        </div>
       </div>
 
-      <div className="border-t border-gray-100 pt-6 mb-8">
-        <div className="flex justify-between items-end">
-          <span className="text-gray-500">Total</span>
-          <span className="text-3xl font-black text-primary">${finalTotal.toFixed(2)}</span>
+      <div className="flex justify-between items-end font-black text-3xl border-t border-gray-100 pt-6 mb-8 text-gray-900">
+        <div className="flex flex-col">
+          <span className="text-xs uppercase text-gray-400 tracking-widest mb-1">Total a pagar</span>
+          <span>Total</span>
         </div>
+        <span className="text-primary">${finalTotal.toFixed(2)}</span>
       </div>
 
-      <button className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+      {/* DISPARADOR DEL CHECKOUT (US012-A) */}
+      <Link
+        href={`/checkout/payment?total=${finalTotal}&discount=${discount}&coupon=${couponData?.code || ''}`}
+        className="w-full bg-primary text-white font-bold py-5 rounded-2xl flex items-center justify-center gap-2 hover:bg-red-600 hover:shadow-lg hover:shadow-red-200 transition-all active:scale-95 text-center"
+      >
         <span className="material-symbols-outlined">payments</span>
         Finalizar Compra
-      </button>
-      
-      <p className="text-[10px] text-gray-400 text-center mt-4 uppercase tracking-widest">
-        Pagos seguros mediante VibePay
+      </Link>
+
+      {/* SECCIÓN DE CUPÓN (US012-G) */}
+      <FormularioCupon cartItems={cart.items} onDiscountChange={handleDiscount} />
+
+      <p className="text-center text-gray-400 text-[10px] mt-4 uppercase font-bold tracking-tighter">
+        Pago 100% Seguro en VibeMarket
       </p>
     </div>
   );
