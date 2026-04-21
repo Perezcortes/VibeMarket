@@ -24,10 +24,22 @@ export class ActualizarEstatusRepository {
   /**
    * Actualiza el estado de un pedido específico en la base de datos.
    */
+  // En tu archivo: actualizarEstatus.repository.ts
   static async updateOrderStatus(orderId: string, newStatus: OrderStatus) {
-    return await prisma.order.update({
-      where: { id: orderId },
-      data: { status: newStatus },
-    });
+    return await prisma.$transaction([
+      // 1. Actualiza el pedido
+      prisma.order.update({
+        where: { id: orderId },
+        data: { status: newStatus },
+      }),
+      // 2. Crea el registro en el historial (Igual que en la US016-C)
+      prisma.orderStatusHistory.create({
+        data: {
+          order_id: orderId,
+          status: newStatus,
+          //changedBy: "Repartidor (Manual)",
+        },
+      }),
+    ]);
   }
 }

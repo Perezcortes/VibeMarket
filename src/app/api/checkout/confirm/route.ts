@@ -10,7 +10,12 @@ export async function POST(req: Request) {
     if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
     const body = await req.json();
-    const { userId, method, street, exterior_number, neighborhood, city, state, postal_code } = body;
+    
+    // ✨ 1. ATRAPAMOS EL TOTAL CON DESCUENTO AQUÍ
+    const { 
+      userId, method, street, exterior_number, neighborhood, 
+      city, state, postal_code, totalACobrar 
+    } = body;
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Crear dirección
@@ -34,33 +39,34 @@ export async function POST(req: Request) {
 
       if (!cart || cart.items.length === 0) throw new Error("Carrito vacío");
 
-      // 3. Calcular total (Convertimos a Number para asegurar precisión en JS antes de pasar a Prisma)
-      const totalAmount = cart.items.reduce((acc, item) => {
+      // 3. Calcular total original (por si acaso no viene el descuento)
+      const totalOriginal = cart.items.reduce((acc, item) => {
         const price = Number(item.product.price);
         return acc + (price * item.quantity);
       }, 0);
 
+      // ✨ 2. LA MAGIA: Si el frontend nos mandó un total con descuento, usamos ese. 
+      // Si no, usamos el original que calculamos arriba.
+      const finalTotal = totalACobrar ? Number(totalACobrar) : totalOriginal;
+
       // 4. Crear la Orden (HU019/US012-B)
-      // NOTA: Usamos los valores directamente, Prisma se encargará del cast 
-      // si los nombres de las propiedades coinciden con el esquema.
       const newOrder = await tx.order.create({
         data: {
           buyer_id: userId,
           address_id: newAddress.id,
-          total_amount: new Prisma.Decimal(totalAmount), // Envolvemos el total
+          total_amount: new Prisma.Decimal(finalTotal), // ✨ GUARDAMOS EL TOTAL CON DESCUENTO
           status: 'pendiente',
           items: {
             create: cart.items.map(item => ({
               product_id: item.product_id,
               quantity: item.quantity,
-              // IMPORTANTE: Asegúrate de que item.product.price sea un Decimal válido de Prisma
               unit_price: item.product.price 
             }))
           },
           payments: {
             create: {
               provider: method || "card",
-              amount: new Prisma.Decimal(totalAmount),
+              amount: new Prisma.Decimal(finalTotal), // ✨ LE COBRAMOS EL TOTAL CON DESCUENTO
               status: "aprobado" as any
             }
           }
