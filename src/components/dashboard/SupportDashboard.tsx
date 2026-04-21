@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
+import Chatbot from "./support/Chatbot";
 
 // --- TIPOS DE DATOS ---
 type Message = {
@@ -269,8 +270,11 @@ export default function SupportDashboard({ user }: { user: any }) {
                         )}
                     </>
                 )}
-
             </main>
+
+            {/* --- INTEGRACIÓN DEL ASISTENTE VIRTUAL --- */}
+            {/* Se ubica fuera de 'main' para aparecer instantáneamente */}
+            <Chatbot />
         </div>
     );
 }
@@ -311,7 +315,6 @@ function StatCard({ label, value, icon, color, bg }: any) {
 }
 
 function TicketRow({ ticket, onClick }: { ticket: Ticket, onClick: () => void }) {
-    // Lógica de colores según el status que viene de la DB
     const statusColor = 
         ticket.status === 'alta' || ticket.status === 'critica' ? 'bg-red-100 text-red-600' : 
         ticket.status === 'en_proceso' ? 'bg-blue-100 text-blue-600' : 
@@ -322,7 +325,6 @@ function TicketRow({ ticket, onClick }: { ticket: Ticket, onClick: () => void })
         ? ticket.chat_messages[ticket.chat_messages.length - 1].message 
         : ticket.subject;
 
-    // Formatear fecha (Ej: 10:30 AM o Ayer)
     const date = new Date(ticket.updated_at);
     const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -359,7 +361,6 @@ function TicketDetailView({ ticket, onBack, onSend, onChangeStatus }: { ticket: 
     const [replyText, setReplyText] = useState("");
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
-    // Scroll al fondo al abrir o recibir mensaje
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [ticket.chat_messages]);
@@ -373,8 +374,6 @@ function TicketDetailView({ ticket, onBack, onSend, onChangeStatus }: { ticket: 
 
     return (
         <div className="flex gap-6 h-[calc(100vh-180px)] animate-fade-in">
-            
-            {/* CHAT AREA */}
             <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <div className="flex items-center gap-3">
@@ -389,7 +388,6 @@ function TicketDetailView({ ticket, onBack, onSend, onChangeStatus }: { ticket: 
                 </div>
 
                 <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-white">
-                    {/* Mensaje de bienvenida/sistema */}
                     <div className="flex justify-center">
                          <span className="bg-gray-100 text-gray-400 text-[10px] px-3 py-1 rounded-full">
                             Ticket creado el {new Date(ticket.chat_messages[0]?.created_at || ticket.updated_at).toLocaleDateString()}
@@ -397,9 +395,7 @@ function TicketDetailView({ ticket, onBack, onSend, onChangeStatus }: { ticket: 
                     </div>
 
                     {ticket.chat_messages.map((msg, idx) => {
-                        // Lógica para determinar si el mensaje es del soporte (derecha) o del cliente (izquierda)
                         const isSupport = msg.sender.role === 'soporte' || msg.sender.role === 'admin';
-                        
                         return (
                             <div key={msg.id || idx} className={`flex ${isSupport ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[70%] p-4 rounded-2xl text-sm shadow-sm ${
@@ -435,11 +431,9 @@ function TicketDetailView({ ticket, onBack, onSend, onChangeStatus }: { ticket: 
                 </form>
             </div>
 
-            {/* SIDEBAR DERECHO */}
             <div className="w-80 space-y-6">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
                     <h4 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wide">Gestionar Estado</h4>
-                    
                     <div className="space-y-3">
                         <label className="text-xs font-bold text-gray-500 block">Estado Actual</label>
                         <select 
@@ -453,7 +447,6 @@ function TicketDetailView({ ticket, onBack, onSend, onChangeStatus }: { ticket: 
                             <option value="cerrado">🔒 Cerrado</option>
                         </select>
                     </div>
-
                     <div className="mt-6 pt-6 border-t border-gray-100">
                          <button 
                             onClick={() => onChangeStatus('resuelto')} 
