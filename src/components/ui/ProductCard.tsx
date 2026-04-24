@@ -1,3 +1,12 @@
+/**
+ * SISTEMA PARA TIENDA EN LÍNEA
+ * Módulo: Capa de Presentación (UI) - COMPRADORES
+ * Historia de Usuario: US009-C - Visualización de ofertas/descuentos
+ * AUTOR (Responsable): Amaury Yamil Morales Diaz
+ * COPILOTO (XP Pair): Leonides Lopez Robles
+ * FECHA: 14/04/2026
+ */
+
 "use client";
 import { useState } from "react";
 import Link from "next/link";
@@ -10,11 +19,11 @@ interface ProductCardProps {
   price: number | string;
   category: string;
   tag?: string;
-  discount?: string;
+  discount?: string | number; // Modificado para aceptar porcentaje (US009-C)
   productId: string;
   userId?: string;
-  isFavorite?: boolean; // Nueva prop
-  rating?: number;     // Nueva prop (promedio)
+  isFavorite?: boolean;
+  rating?: number;
 }
 
 export default function ProductCard({ 
@@ -26,6 +35,11 @@ export default function ProductCard({
   const [favorited, setFavorited] = useState(isFavorite);
   const router = useRouter();
   const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+
+  // Lógica US009-C: Cálculo de descuentos
+  const discountPercentage = typeof discount === 'number' ? discount : parseInt(discount as string) || 0;
+  const hasDiscount = discountPercentage > 0;
+  const discountedPrice = hasDiscount ? numericPrice - (numericPrice * (discountPercentage / 100)) : numericPrice;
 
   // US09-D: Función para Favoritos
   const handleToggleFavorite = async (e: React.MouseEvent) => {
@@ -83,7 +97,8 @@ export default function ProductCard({
 
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
           {tag && <span className="bg-black text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide shadow-md">{tag}</span>}
-          {discount && <span className="bg-primary text-white text-[10px] font-bold px-2 py-1 rounded shadow-md">{discount}</span>}
+          {/* US009-C: Etiqueta de Oferta */}
+          {hasDiscount && <span className="bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded shadow-md tracking-wider">-{discountPercentage}% OFERTA</span>}
         </div>
         
         <div className="aspect-square bg-white rounded-xl mb-4 flex items-center justify-center relative overflow-hidden">
@@ -103,7 +118,6 @@ export default function ProductCard({
           <div className="flex justify-between items-start mb-1">
             <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">{category}</p>
             
-            {/* US09-E: Estrellas de Calificación */}
             <div className="flex items-center gap-1">
               <span className="material-symbols-outlined text-amber-400 text-sm fill-1">star</span>
               <span className="text-xs font-bold text-gray-600">{rating > 0 ? rating.toFixed(1) : "N/A"}</span>
@@ -111,9 +125,19 @@ export default function ProductCard({
           </div>
 
           <h3 className="font-bold text-gray-800 mb-2 truncate text-base">{title}</h3>
-          <span className="text-xl font-black text-primary">
-              ${Number(numericPrice).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-          </span>
+          
+          {/* US009-C: Precio original tachado junto al precio con descuento */}
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-black text-primary">
+                ${Number(discountedPrice).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+            </span>
+            {hasDiscount && (
+              <span className="text-sm font-medium text-gray-400 line-through">
+                ${Number(numericPrice).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </span>
+            )}
+          </div>
+
         </div>
       </div>
     </Link>
