@@ -9,7 +9,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions"; // Ajusta a tu ruta real
 
 // 1. Importamos la Clase
-import { OrderPresenter } from "../../../../../lib/presentation/seller/order/Order.presenter";
+import { OrderPresenter } from "@/presentation/seller/order/Order.presenter";
 
 // 2. Importamos los Servicios (Ajusta las rutas a tu proyecto)
 import { OrderMonitoringService } from "@/services/seller/orders/Ordermonitoring.service";
