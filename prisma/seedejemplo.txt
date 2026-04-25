@@ -1,0 +1,456 @@
+/**
+ * =============================================
+ * VIBEMARKET — SEED COMPLETO
+ * =============================================
+ * Cubre:
+ *  - Usuarios (admin, vendedor, comprador, repartidor, soporte)
+ *  - Categorías y Productos con imágenes
+ *  - Dirección del comprador
+ *  - Órdenes con status "pendiente" ← necesarias para CP-001
+ *  - OrderItems vinculando productos al vendedor
+ *  - Pagos asociados a las órdenes
+ *  - Cupones del vendedor
+ *  - FAQ de ejemplo
+ */
+
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
+
+const prisma = new PrismaClient()
+
+async function main() {
+  console.log('🚀 Iniciando seed VibeMarket...\n')
+
+  // ─────────────────────────────────────────────
+  // 0. HASH COMÚN
+  // ─────────────────────────────────────────────
+  const hash = bcrypt.hashSync('password123', bcrypt.genSaltSync(10))
+
+  // ─────────────────────────────────────────────
+  // 1. USUARIOS
+  // ─────────────────────────────────────────────
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@vibemarket.com' },
+    update: {},
+    create: {
+      email: 'admin@vibemarket.com',
+      full_name: 'Administrador VibeMarket',
+      password_hash: hash,
+      role: 'admin',
+      is_active: true,
+    },
+  })
+
+  const vendedor = await prisma.user.upsert({
+    where: { email: 'vendedor@vibemarket1.com' },
+    update: {},
+    create: {
+      email: 'vendedor@vibemarket1.com',
+      full_name: 'TechStore Oficial',
+      password_hash: hash,
+      role: 'vendedor',
+      is_active: true,
+    },
+  })
+
+  const comprador = await prisma.user.upsert({
+    where: { email: 'comprador@vibemarket.com' },
+    update: {},
+    create: {
+      email: 'comprador@vibemarket.com',
+      full_name: 'Juan Comprador',
+      password_hash: hash,
+      role: 'comprador',
+      is_active: true,
+    },
+  })
+
+  const repartidor = await prisma.user.upsert({
+    where: { email: 'repartidor@vibemarket.com' },
+    update: {},
+    create: {
+      email: 'repartidor@vibemarket.com',
+      full_name: 'Carlos Envíos',
+      password_hash: hash,
+      role: 'repartidor',
+      is_active: true,
+    },
+  })
+
+  const soporte = await prisma.user.upsert({
+    where: { email: 'soporte@vibemarket.com' },
+    update: {},
+    create: {
+      email: 'soporte@vibemarket.com',
+      full_name: 'Agente Soporte',
+      password_hash: hash,
+      role: 'soporte',
+      is_active: true,
+    },
+  })
+
+  console.log('✅ Usuarios creados')
+
+  // ─────────────────────────────────────────────
+  // 2. CATEGORÍAS
+  // ─────────────────────────────────────────────
+  const catTecno = await prisma.category.upsert({
+    where: { slug: 'tecnologia' },
+    update: {},
+    create: { name: 'Tecnología', slug: 'tecnologia', description: 'Gadgets y electrónicos' },
+  })
+
+  const catGaming = await prisma.category.upsert({
+    where: { slug: 'gaming' },
+    update: {},
+    create: { name: 'Gaming', slug: 'gaming', description: 'Videojuegos y periféricos' },
+  })
+
+  const catAudio = await prisma.category.upsert({
+    where: { slug: 'audio' },
+    update: {},
+    create: { name: 'Audio', slug: 'audio', description: 'Audífonos y bocinas' },
+  })
+
+  console.log('✅ Categorías creadas')
+
+  // ─────────────────────────────────────────────
+  // 3. PRODUCTOS
+  // ─────────────────────────────────────────────
+  const productosData = [
+    {
+      name: 'Sony WH-1000XM5 Noise Cancelling',
+      description: 'Los mejores audífonos con cancelación de ruido activa líder en su clase.',
+      price: 6499.0,
+      stock: 10,
+      category_id: catAudio.id,
+      image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=800',
+    },
+    {
+      name: 'Teclado Mecánico RGB TechStore',
+      description: 'Switches azules clicky, retroiluminación RGB personalizable por tecla.',
+      price: 1800.0,
+      stock: 25,
+      category_id: catGaming.id,
+      image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=800',
+    },
+    {
+      name: 'Monitor LG UltraWide 34"',
+      description: 'Panel IPS 144Hz QHD ultrawide para productividad y gaming.',
+      price: 12500.0,
+      stock: 8,
+      category_id: catTecno.id,
+      image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800',
+    },
+    {
+      name: 'Mouse Logitech G502 Hero',
+      description: 'Sensor HERO 25K, 11 botones programables, peso ajustable.',
+      price: 1299.0,
+      stock: 40,
+      category_id: catGaming.id,
+      image: 'https://images.unsplash.com/photo-1527814050087-3793815479db?w=800',
+    },
+    {
+      name: 'SSD Samsung 970 EVO 1TB',
+      description: 'NVMe M.2, velocidades de lectura hasta 3500 MB/s.',
+      price: 2800.0,
+      stock: 0, // ← Para probar CP-005 (stock en cero)
+      category_id: catTecno.id,
+      image: 'https://images.unsplash.com/photo-1597673030470-87f19covering?w=800',
+    },
+  ]
+
+  const productosCreados: Record<string, any> = {}
+
+  for (const p of productosData) {
+    const slug = p.name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^\w-]+/g, '')
+
+    const producto = await prisma.product.upsert({
+      where: { slug },
+      update: { stock: p.stock, price: p.price, seller_id: vendedor.id },
+      create: {
+        name: p.name,
+        slug,
+        description: p.description,
+        price: p.price,
+        stock: p.stock,
+        category_id: p.category_id,
+        seller_id: vendedor.id,
+        is_active: true,
+        images: { create: [{ url: p.image }] },
+      },
+    })
+
+    productosCreados[p.name] = producto
+    console.log(`   📦 Producto: ${p.name} | stock: ${p.stock}`)
+  }
+
+  console.log('✅ Productos creados\n')
+
+  // ─────────────────────────────────────────────
+  // 4. DIRECCIÓN DEL COMPRADOR
+  // ─────────────────────────────────────────────
+  // Buscamos si ya tiene una dirección para no duplicar
+  let address = await prisma.address.findFirst({
+    where: { user_id: comprador.id },
+  })
+
+  if (!address) {
+    address = await prisma.address.create({
+      data: {
+        user_id: comprador.id,
+        street: 'Av. Tecnológico 123',
+        city: 'Huajuapan de León',
+        state: 'Oaxaca',
+        postal_code: '69000',
+        country: 'México',
+      },
+    })
+  }
+
+  console.log('✅ Dirección creada')
+
+  // ─────────────────────────────────────────────
+  // 5. ÓRDENES
+  // CRÍTICO para CP-001: deben existir órdenes con
+  // status "pendiente" que contengan productos del vendedor.
+  // ─────────────────────────────────────────────
+
+  const sonos = productosCreados['Sony WH-1000XM5 Noise Cancelling']
+  const teclado = productosCreados['Teclado Mecánico RGB TechStore']
+  const monitor = productosCreados['Monitor LG UltraWide 34"']
+  const mouse = productosCreados['Mouse Logitech G502 Hero']
+
+  // Orden 1 — pendiente (la que usará CP-001 para confirmar y decrementar stock)
+  const orden1 = await prisma.order.upsert({
+    where: { id: 'order-pendiente-001' },
+    update: {},
+    create: {
+      id: 'order-pendiente-001',
+      buyer_id: comprador.id,
+      address_id: address.id,
+      status: 'pendiente',
+      total_amount: sonos.price,
+      items: {
+        create: [
+          {
+            product_id: sonos.id,
+            quantity: 1,
+            unit_price: sonos.price,
+          },
+        ],
+      },
+    },
+  })
+
+  // Orden 2 — también pendiente (teclado + mouse)
+  const orden2 = await prisma.order.upsert({
+    where: { id: 'order-pendiente-002' },
+    update: {},
+    create: {
+      id: 'order-pendiente-002',
+      buyer_id: comprador.id,
+      address_id: address.id,
+      status: 'pendiente',
+      total_amount: Number(teclado.price) + Number(mouse.price),
+      items: {
+        create: [
+          { product_id: teclado.id, quantity: 2, unit_price: teclado.price },
+          { product_id: mouse.id,   quantity: 1, unit_price: mouse.price },
+        ],
+      },
+    },
+  })
+
+  // Orden 3 — pagado (ya procesada)
+  const orden3 = await prisma.order.upsert({
+    where: { id: 'order-pagado-001' },
+    update: {},
+    create: {
+      id: 'order-pagado-001',
+      buyer_id: comprador.id,
+      address_id: address.id,
+      status: 'pagado',
+      total_amount: monitor.price,
+      items: {
+        create: [{ product_id: monitor.id, quantity: 1, unit_price: monitor.price }],
+      },
+    },
+  })
+
+  // Orden 4 — entregada (historial)
+  const orden4 = await prisma.order.upsert({
+    where: { id: 'order-entregado-001' },
+    update: {},
+    create: {
+      id: 'order-entregado-001',
+      buyer_id: comprador.id,
+      address_id: address.id,
+      status: 'entregado',
+      total_amount: mouse.price,
+      items: {
+        create: [{ product_id: mouse.id, quantity: 1, unit_price: mouse.price }],
+      },
+    },
+  })
+
+  // Orden 5 — enviada con repartidor asignado
+  const orden5 = await prisma.order.upsert({
+    where: { id: 'order-enviado-001' },
+    update: {},
+    create: {
+      id: 'order-enviado-001',
+      buyer_id: comprador.id,
+      courier_id: repartidor.id,
+      address_id: address.id,
+      status: 'enviado',
+      total_amount: teclado.price,
+      items: {
+        create: [{ product_id: teclado.id, quantity: 1, unit_price: teclado.price }],
+      },
+    },
+  })
+
+  console.log('✅ Órdenes creadas:')
+  console.log('   🟡 order-pendiente-001 (Sony XM5)         → pendiente')
+  console.log('   🟡 order-pendiente-002 (Teclado + Mouse)  → pendiente')
+  console.log('   🔵 order-pagado-001    (Monitor)          → pagado')
+  console.log('   🟢 order-entregado-001 (Mouse)            → entregado')
+  console.log('   🚚 order-enviado-001   (Teclado)          → enviado\n')
+
+  // ─────────────────────────────────────────────
+  // 6. HISTORIAL DE STATUS
+  // ─────────────────────────────────────────────
+  await prisma.orderStatusHistory.createMany({
+    skipDuplicates: true,
+    data: [
+      { order_id: orden1.id, status: 'pendiente', changed_by: comprador.id },
+      { order_id: orden2.id, status: 'pendiente', changed_by: comprador.id },
+      { order_id: orden3.id, status: 'pendiente', changed_by: comprador.id },
+      { order_id: orden3.id, status: 'pagado',    changed_by: vendedor.id },
+      { order_id: orden4.id, status: 'pendiente', changed_by: comprador.id },
+      { order_id: orden4.id, status: 'pagado',    changed_by: vendedor.id },
+      { order_id: orden4.id, status: 'enviado',   changed_by: repartidor.id },
+      { order_id: orden4.id, status: 'entregado', changed_by: repartidor.id },
+      { order_id: orden5.id, status: 'pendiente', changed_by: comprador.id },
+      { order_id: orden5.id, status: 'pagado',    changed_by: vendedor.id },
+      { order_id: orden5.id, status: 'enviado',   changed_by: repartidor.id },
+    ],
+  })
+
+  console.log('✅ Historial de estados creado')
+
+  // ─────────────────────────────────────────────
+  // 7. PAGOS
+  // ─────────────────────────────────────────────
+  await prisma.payment.createMany({
+    skipDuplicates: true,
+    data: [
+      { id: 'pay-001', order_id: orden3.id, provider: 'stripe', status: 'aprobado', amount: monitor.price },
+      { id: 'pay-002', order_id: orden4.id, provider: 'stripe', status: 'aprobado', amount: mouse.price },
+      { id: 'pay-003', order_id: orden5.id, provider: 'paypal', status: 'aprobado', amount: teclado.price },
+    ],
+  })
+
+  console.log('✅ Pagos creados')
+
+  // ─────────────────────────────────────────────
+  // 8. CUPONES DEL VENDEDOR
+  // ─────────────────────────────────────────────
+  await prisma.coupon.createMany({
+    skipDuplicates: true,
+    data: [
+      {
+        id: 'coupon-001',
+        seller_id: vendedor.id,
+        code: 'TECH10',
+        type: 'porcentaje',
+        value: 10,
+        is_active: true,
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
+      },
+      {
+        id: 'coupon-002',
+        seller_id: vendedor.id,
+        code: 'DESCUENTO500',
+        type: 'monto_fijo',
+        value: 500,
+        is_active: true,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),  // 7 días
+      },
+      {
+        id: 'coupon-003',
+        seller_id: vendedor.id,
+        code: 'EXPIRADO',
+        type: 'porcentaje',
+        value: 15,
+        is_active: false,
+        expires_at: new Date('2024-01-01'), // ya venció
+      },
+    ],
+  })
+
+  console.log('✅ Cupones creados')
+
+  // ─────────────────────────────────────────────
+  // 9. FAQ KNOWLEDGE BASE
+  // ─────────────────────────────────────────────
+  await prisma.faqKnowledge.createMany({
+    skipDuplicates: true,
+    data: [
+      {
+        id: 'faq-001',
+        question: '¿Cómo puedo rastrear mi pedido?',
+        answer: 'Ve a "Mis Pedidos" y haz clic en el número de orden. Ahí verás el estado actualizado y el número de guía.',
+        category: 'pedidos',
+        times_used: 42,
+      },
+      {
+        id: 'faq-002',
+        question: '¿Cuál es la política de devoluciones?',
+        answer: 'Tienes 30 días para solicitar devolución. El producto debe estar en su empaque original y sin uso.',
+        category: 'devoluciones',
+        times_used: 28,
+      },
+      {
+        id: 'faq-003',
+        question: '¿Cómo aplico un cupón de descuento?',
+        answer: 'En el carrito de compras, ingresa el código en el campo "Cupón" y haz clic en "Aplicar".',
+        category: 'pagos',
+        times_used: 15,
+      },
+    ],
+  })
+
+  console.log('✅ FAQ creada')
+
+  // ─────────────────────────────────────────────
+  // RESUMEN FINAL
+  // ─────────────────────────────────────────────
+  console.log('\n🎉 ¡Seed completado exitosamente!')
+  console.log('─────────────────────────────────────────')
+  console.log('Credenciales de prueba (todas: password123):')
+  console.log('  admin@vibemarket.com       → admin')
+  console.log('  vendedor@vibemarket1.com   → vendedor  ← usado en los tests')
+  console.log('  comprador@vibemarket.com   → comprador')
+  console.log('  repartidor@vibemarket.com  → repartidor')
+  console.log('  soporte@vibemarket.com     → soporte')
+  console.log('─────────────────────────────────────────')
+  console.log('Órdenes pendientes para CP-001:')
+  console.log('  order-pendiente-001  (Sony WH-1000XM5)')
+  console.log('  order-pendiente-002  (Teclado + Mouse)')
+  console.log('─────────────────────────────────────────\n')
+}
+
+main()
+  .then(async () => { await prisma.$disconnect() })
+  .catch(async (e) => {
+    console.error('❌ Error en el seed:', e)
+    await prisma.$disconnect()
+    process.exit(1)
+  })
