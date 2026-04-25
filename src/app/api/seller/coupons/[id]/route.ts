@@ -1,6 +1,10 @@
-// ════════════════════════════════════════════════════════════════════
-//  /api/seller/coupons/[id]/route.ts  →  pega este bloque en ese archivo
-// ════════════════════════════════════════════════════════════════════
+/**
+ * SISTEMA PARA TIENDA EN LÍNEA
+ * Módulo: API Route — Gestión de Estado de Cupones
+ * Historias: US004-C
+ * RUTA: /api/seller/coupons/[id]/route.ts
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
@@ -12,7 +16,8 @@ const statusService = new CouponStatusService(CouponStatusRepository);
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  // 1. Definimos params como una Promesa para cumplir con Next.js 15
+  { params }: { params: Promise<{ id: string }> } 
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -21,7 +26,9 @@ export async function PATCH(
     }
 
     const { action, currentState } = await req.json();
-    const { id } = params;
+
+    // 2. Esperamos a que la promesa de params se resuelva para obtener el id
+    const { id } = await params; 
 
     let updated;
     if (action === "activate") {
@@ -34,9 +41,16 @@ export async function PATCH(
       return NextResponse.json({ error: "Acción no válida." }, { status: 400 });
     }
 
+    // Validamos que el servicio haya devuelto un cupón actualizado
+    if (!updated) {
+      return NextResponse.json({ error: "No se pudo actualizar el cupón." }, { status: 404 });
+    }
+
     const formatted = DiscountPresenter.format(updated as unknown as RawCoupon);
     return NextResponse.json({ data: formatted }, { status: 200 });
+
   } catch (error: unknown) {
+    console.error("[PATCH /api/seller/coupons/[id]]", error);
     const message =
       error instanceof Error ? error.message : "Error al cambiar el estado.";
     return NextResponse.json({ error: message }, { status: 400 });
