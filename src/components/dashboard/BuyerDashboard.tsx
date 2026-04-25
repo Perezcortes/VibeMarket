@@ -8,7 +8,7 @@ export default function BuyerDashboard({ user }: { user: any }) {
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
 
   useEffect(() => {
-    fetch('/api/buyer/payments/history')
+    fetch('/api/buyer/history')
       .then(res => res.json())
       .then(data => {
         setPayments(Array.isArray(data) ? data : []);
