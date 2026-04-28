@@ -3,6 +3,8 @@ import { useState } from "react";
 import { signOut } from "next-auth/react";
 import CatalogManager from "@/components/dashboard/seller/CatalogManager";
 import OrdersManager from "@/components/dashboard/seller/orderManager";
+// Al inicio del archivo, agregar el import:
+import DiscountsPage from "@/components/dashboard/seller/discountsManager"; // Ajusta la ruta si es necesario
 // --- NUEVA INTERFAZ PARA INTEGRAR CON EL PRESENTER ---
 interface SellerDashboardProps {
   user: any;
@@ -41,12 +43,12 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
                 onClick={() => setView('overview')} 
             />
             {/* NUEVA OPCIÓN PARA TU HISTORIA DE USUARIO HU008 */}
-            <SidebarItem 
-                icon="history_edu" 
-                label="Historial de Gastos" 
-                active={view === 'history'} 
-                onClick={() => setView('history')} 
-            />
+           <SidebarItem 
+    icon="sell"          // ← icono correcto de Material Symbols
+    label="Descuentos" 
+    active={view === 'descuentos'} 
+    onClick={() => setView('descuentos')} 
+/>
             <SidebarItem 
                 icon="inventory_2" 
                 label="Catálogo & Stock" 
@@ -162,10 +164,12 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
 
          {/* 3. Pedidos */}
         {view === 'orders' && <OrdersManager />}
+        {/* descuentos */}
+{view === 'descuentos' && <DiscountsPage />}
 
 
         {/* 3. Otros */}
-        {(view !== 'overview' && view !== 'catalog' && view !== 'history' && view !== 'orders' ) && (
+        {(view !== 'overview' && view !== 'catalog' && view !== 'history' && view !== 'orders' && view !== 'descuentos') && (
        
             <div className="flex flex-col items-center justify-center h-96 bg-white dark:bg-[#1a1010] rounded-3xl border-2 border-dashed border-gray-200">
                 <span className="material-symbols-outlined text-4xl text-gray-400">construction</span>
