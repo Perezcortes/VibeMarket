@@ -1,38 +1,44 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions"; 
 
-export async function GET() {
-  const products = await prisma.product.findMany({
-    where: { is_active: true }
-  });
-  return NextResponse.json(products);
-}
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  
-  // Validación de Rol
-  const role = (session?.user as any)?.role;
-  if (!session || role !== "vendedor") {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  // US010-A: Obtener el nombre
+  const query = searchParams.get("q") || "";
+  // US010-B: Obtener categoría
+  const category = searchParams.get("category") || "";
+  // US010-C: Rango de precios
+  const minPrice = Number(searchParams.get("min")) || 0;
+  const maxPrice = Number(searchParams.get("max")) || 999999;
+  // US010-D: Ordenamiento
+  const sort = searchParams.get("sort") === "desc" ? "desc" : "asc";
+
+  try {
+    const products = await prisma.product.findMany({
+      where: {
+        AND: [
+          { name: { contains: query } }, // Búsqueda por nombre
+          category ? { category: { name: category } } : {}, // Filtro categoría
+          {
+            price: {
+              gte: minPrice, // Precio mayor o igual a
+              lte: maxPrice, // Precio menor o igual a
+            },
+          },
+        ],
+      },
+      orderBy: {
+        price: sort as any, // Ordenamiento descendente o ascendente
+      },
+      include: {
+        category: true,
+        images: true,
+      },
+    });
+
+    return NextResponse.json(products);
+  } catch (error) {
+    return NextResponse.json({ error: "Error al filtrar" }, { status: 500 });
   }
-
-  const body = await req.json();
-  
-  // Creación del producto
-  const newProduct = await prisma.product.create({
-    data: {
-      name: body.name,
-      price: body.price,
-      slug: body.slug || body.name.toLowerCase().replace(/\s+/g, '-'),
-      // Asigna el vendedor logueado
-      seller: {
-        connect: { id: (session.user as any).id }
-      }
-    }
-  });
-
-  return NextResponse.json(newProduct, { status: 201 });
 }
