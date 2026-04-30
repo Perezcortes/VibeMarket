@@ -4,8 +4,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+// Importamos el nuevo componente cliente
+import FavoriteButton from "@/components/ui/FavoriteButton";
 
-// 1. Definimos el tipo como una Promesa
 type Props = {
   params: Promise<{ slug: string }>;
 };
@@ -13,15 +14,26 @@ type Props = {
 export default async function ProductPage({ params }: Props) {
   const session = await getServerSession(authOptions);
   
-  // 2. DESEMPAQUETAMOS LOS PARÁMETROS CON AWAIT 
   const { slug } = await params;
   
+  // Buscamos el producto e incluimos si ya es favorito para este usuario
   const product = await prisma.product.findUnique({
     where: { slug: slug },
-    include: { category: true, images: true, seller: true }
+    include: { 
+      category: true, 
+      images: true, 
+      seller: true,
+      // Verificamos si existe un registro en la tabla Favorite para este usuario y producto
+      favorites: session?.user?.id ? {
+        where: { user_id: session.user.id }
+      } : false
+    }
   });
 
   if (!product) return notFound();
+
+  // Determinamos si el producto ya está en la lista de favoritos del usuario
+  const isInitialFavorite = Array.isArray(product.favorites) && product.favorites.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-text-main">
@@ -103,9 +115,13 @@ export default async function ProductPage({ params }: Props) {
                      <span className="material-symbols-outlined group-hover:animate-bounce">shopping_bag</span>
                      Añadir al Carrito
                   </button>
-                  <button className="px-6 border-2 border-gray-200 rounded-xl hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition-colors">
-                     <span className="material-symbols-outlined text-2xl">favorite</span>
-                  </button>
+                  
+                  {/* COMPONENTE INTERACTIVO DE FAVORITOS */}
+                  <FavoriteButton 
+                    productId={product.id} 
+                    userId={session?.user?.id} 
+                    initialIsFavorite={isInitialFavorite} 
+                  />
                </div>
             </div>
 
