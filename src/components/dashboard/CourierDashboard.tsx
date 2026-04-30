@@ -12,7 +12,7 @@ export default function CourierDashboard({ user }: { user: any }) {
     const fileInputRef = useRef<HTMLInputElement>(null); // 👈 Referencia para limpiar el input en las pruebas
     const [view, setView] = useState("route");
     const [isOnline, setIsOnline] = useState(true);
-    
+
     // ✨ Cambiamos esto para que inicie vacío y se llene con la BD
     const [routes, setRoutes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -29,8 +29,8 @@ export default function CourierDashboard({ user }: { user: any }) {
                         const pedidosCargados = data.data.map((order: any, index: number) => ({
                             id: order.id,
                             address: order.address?.street || "Dirección no registrada",
-                            time: "Calculando...", 
-                            distance: "0.0 km", 
+                            time: "Calculando...",
+                            distance: "0.0 km",
                             visitOrder: index + 1,
                             currentStatus: order.status
                         }));
@@ -47,7 +47,7 @@ export default function CourierDashboard({ user }: { user: any }) {
         setCurrentOrderId(orderId);
         setShowCamera(true);
         setCapturedImage(null);
-        
+
         // 🐛 Fix para Playwright: Limpiamos el input file al retomar foto
         if (fileInputRef.current) fileInputRef.current.value = '';
 
@@ -146,10 +146,10 @@ export default function CourierDashboard({ user }: { user: any }) {
 
             if (res.ok) {
                 alert(`¡Éxito! ${data.message}`);
-                
+
                 // ✨ MAGIA: Borramos el pedido entregado de la lista para que el siguiente tome su lugar
                 setRoutes(prevRoutes => prevRoutes.filter(route => route.id !== orderId));
-                
+
                 // Iniciamos cámara para la evidencia
                 startCamera(orderId);
             } else {
@@ -165,6 +165,19 @@ export default function CourierDashboard({ user }: { user: any }) {
     // ✨ 3. LÓGICA DE DIVISIÓN DE PEDIDOS
     const nextOrder = routes.length > 0 ? routes[0] : null;
     const queuedOrders = routes.length > 1 ? routes.slice(1) : [];
+    // ✨ 4. VALIDACIÓN PARA IR A DESCANSO
+    const handleToggleStatus = () => {
+        // Si está "En Turno" (isOnline = true) y quiere pasar a Descanso
+        if (isOnline) {
+            // Revisamos si la lista de rutas tiene algún pedido
+            if (routes.length > 0) {
+                alert("¡No puedes irte a descansar todavía! Tienes entregas pendientes en tu ruta. 📦🚫");
+                return; // Cortamos la ejecución aquí, NO cambiamos el estado
+            }
+        }
+        // Si la ruta está vacía, o si estaba en descanso y quiere volver "En turno", lo dejamos
+        setIsOnline(!isOnline);
+    };
 
     return (
         <div className="min-h-screen bg-slate-50 flex font-sans">
@@ -177,9 +190,9 @@ export default function CourierDashboard({ user }: { user: any }) {
                     </h1>
                 </div>
                 <nav className="p-4 space-y-2 flex-1">
-                    <SidebarItem icon="alt_route" label="Ruta Activa" badge={routes.length.toString()} active={view === 'route'} onClick={() => setView('route')} />
+
                     <SidebarItem icon="history" label="Historial" active={view === 'history'} onClick={() => setView('history')} />
-                    <SidebarItem icon="account_balance_wallet" label="Mis Ganancias" active={view === 'wallet'} onClick={() => setView('wallet')} />
+
                 </nav>
                 <div className="p-4 border-t border-gray-100 bg-slate-50">
                     <div className="flex items-center gap-3 mb-4">
@@ -211,7 +224,7 @@ export default function CourierDashboard({ user }: { user: any }) {
                             {isOnline ? '🟢 Estás conectado y visible.' : '🔴 Estás desconectado.'}
                         </p>
                     </div>
-                    <button onClick={() => setIsOnline(!isOnline)} className={`flex items-center gap-3 px-6 py-3 rounded-full font-bold shadow-lg transition-all active:scale-95 ${isOnline ? 'bg-amber-400 text-black hover:bg-amber-500' : 'bg-gray-200 text-gray-500'}`}>
+                    <button onClick={handleToggleStatus} className={`flex items-center gap-3 px-6 py-3 rounded-full font-bold shadow-lg transition-all active:scale-95 ${isOnline ? 'bg-amber-400 text-black hover:bg-amber-500' : 'bg-gray-200 text-gray-500'}`}>
                         <span className="material-symbols-outlined">{isOnline ? 'local_shipping' : 'garage'}</span>
                         {isOnline ? 'En Turno' : 'Descansando'}
                     </button>
@@ -258,16 +271,12 @@ export default function CourierDashboard({ user }: { user: any }) {
                                                     </div>
                                                     <div>
                                                         <p className="font-bold text-gray-800">Cliente VibeMarket</p>
-                                                        <p className="text-xs text-blue-600 font-bold cursor-pointer hover:underline">Ver instrucciones de entrega</p>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div className="flex flex-col gap-3 min-w-[200px]">
-                                                <button className="flex-1 bg-gray-900 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-black transition-transform active:scale-95 flex items-center justify-center gap-2">
-                                                    <span className="material-symbols-outlined">map</span>
-                                                    Ir con GPS
-                                                </button>
+
                                                 <button
                                                     onClick={() => handleConfirmarEntrega(nextOrder.id)} // 👈 AQUÍ USAMOS EL ID REAL
                                                     disabled={isLiquidating}
@@ -315,7 +324,7 @@ export default function CourierDashboard({ user }: { user: any }) {
             {/* --- MODAL CÁMARA / EVIDENCIA --- */}
             {showCamera && (
                 <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-4">
-                    <h2 className="text-white font-bold mb-4 text-lg">Documentar Entrega - ID: {currentOrderId?.substring(0,8)}</h2>
+                    <h2 className="text-white font-bold mb-4 text-lg">Documentar Entrega - ID: {currentOrderId?.substring(0, 8)}</h2>
 
                     {/* 🐛 Playwright Fix: ref={fileInputRef} agreado */}
                     <input
