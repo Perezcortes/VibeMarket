@@ -7,7 +7,7 @@
  * FECHA: 19 de abril de 2026
  */
 
-import { GET } from "@/app/api/buyer/payments/history/route";
+import { GET } from "@/app/api/buyer/history/route";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";

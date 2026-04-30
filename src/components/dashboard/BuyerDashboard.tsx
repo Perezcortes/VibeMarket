@@ -24,7 +24,7 @@ export default function BuyerDashboard({ user }: { user: any }) {
   ];
 
   useEffect(() => {
-    fetch('/api/buyer/payments/history')
+    fetch('/api/buyer/history')
       .then(res => res.json())
       .then(data => {
         setPayments(Array.isArray(data) ? data : []);
