@@ -3,477 +3,308 @@ import { useState, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
 import Chatbot from "./support/Chatbot";
 
-// --- TIPOS DE DATOS ---
-type Message = {
-    id: string;
-    message: string;
-    created_at: string;
-    sender: {
-        full_name: string;
-        role: string;
-    };
-};
-
-type Ticket = {
-    id: string;
-    user: { full_name: string; email: string };
-    subject: string;
-    status: string;
-    priority: string;
-    updated_at: string;
-    chat_messages: Message[];
+// --- BASE DE DATOS EXTENDIDA (15 TICKETS + 25 RESEÑAS) ---
+const DATA = {
+  pendientes: [
+    { id: "TK-701", order: "#V-101", user: "Julian C.", issue: "Duda con método de pago SPEI", time: "2 min", priority: "Media", error: "PAY_AUTH_01" },
+    { id: "TK-702", order: "#V-102", user: "Paul B.", issue: "Cupón de temporada no aplica", time: "5 min", priority: "Baja", error: "DISCOUNT_LOGIC_FAIL" },
+    { id: "TK-703", order: "#V-103", user: "Albert H.", issue: "Error en dirección de envío", time: "8 min", priority: "Media", error: "MAP_API_LATENCY" },
+    { id: "TK-704", order: "#V-104", user: "Fabrizio M.", issue: "Consulta sobre stock de PS5", time: "15 min", priority: "Baja", error: "INV_SYNC_ERROR" },
+    { id: "TK-705", order: "#V-105", user: "Nick V.", issue: "Problema con validación de SMS", time: "20 min", priority: "Media", error: "AUTH_SMS_TIMEOUT" },
+    { id: "TK-706", order: "#V-106", user: "Matt H.", issue: "Solicitud de factura pendiente", time: "30 min", priority: "Baja", error: "TAX_SERV_DOWN" },
+    { id: "TK-707", order: "#V-107", user: "Alex T.", issue: "Error al cargar foto de perfil", time: "45 min", priority: "Media", error: "IMG_UPLOAD_DENIED" },
+    { id: "TK-708", order: "#V-108", user: "Jamie C.", issue: "Duda sobre garantía de laptop", time: "1h", priority: "Baja", error: "LEGAL_DOC_MISSING" }
+  ],
+  criticos: [
+    { id: "TK-001", order: "#V-901", user: "Thom Y.", issue: "Error 500 en confirmación de compra", time: "1 min", priority: "Crítica", error: "INTERNAL_SERVER_500" },
+    { id: "TK-002", order: "#V-902", user: "Gustavo C.", issue: "Doble cargo en tarjeta de crédito", time: "3 min", priority: "Crítica", error: "GATEWAY_DUPLICATE_TX" },
+    { id: "TK-003", order: "#V-903", user: "Zoe K.", issue: "Fuga de datos en formulario login", time: "4 min", priority: "Crítica", error: "SEC_XSS_DETECTED" },
+    { id: "TK-004", order: "#V-904", user: "Dave G.", issue: "Pasarela de pago no responde", time: "6 min", priority: "Crítica", error: "STRIPE_API_UNREACHABLE" },
+    { id: "TK-005", order: "#V-905", user: "Martin G.", issue: "Orden pagada desapareció de cuenta", time: "10 min", priority: "Crítica", error: "DB_CONSISTENCY_LOCKED" },
+    { id: "TK-006", order: "#V-906", user: "Andy F.", issue: "Error en base de datos de envíos", time: "15 min", priority: "Crítica", error: "LOGISTICS_DB_CRASH" },
+    { id: "TK-007", order: "#V-907", user: "Robert S.", issue: "Certificado SSL expirado en subdominio", time: "20 min", priority: "Crítica", error: "SSL_EXP_HANDSHAKE" }
+  ],
+  resenas: [
+    { id: 1, user: "Mariana S.", comment: "Resolvieron mi duda del envío en segundos.", rating: 5, order: "#V-101" },
+    { id: 2, user: "Roberto D.", comment: "Muy amables, aunque el chat tardó un poco.", rating: 4, order: "#V-202" },
+    { id: 3, user: "Elena F.", comment: "Atención técnica de primer nivel.", rating: 5, order: "#V-303" },
+    { id: 4, user: "Carlos L.", comment: "El agente fue muy paciente conmigo.", rating: 5, order: "#V-404" },
+    { id: 5, user: "Sofia G.", comment: "Solucionaron el cargo doble rápido.", rating: 5, order: "#V-505" },
+    { id: 6, user: "Andrés M.", comment: "Excelente plataforma de ayuda.", rating: 5, order: "#V-606" },
+    { id: 7, user: "Lucía P.", comment: "Me gustaría que el chatbot fuera más rápido.", rating: 3, order: "#V-707" },
+    { id: 8, user: "Fernando V.", comment: "Soporte técnico muy eficiente.", rating: 5, order: "#V-808" },
+    { id: 9, user: "Gabriela H.", comment: "No pude aplicar mi cupón al principio.", rating: 4, order: "#V-909" },
+    { id: 10, user: "Javier R.", comment: "Todo perfecto con mi devolución.", rating: 5, order: "#V-111" },
+    { id: 11, user: "Monica S.", comment: "Muy buena estética de la página.", rating: 5, order: "#V-222" },
+    { id: 12, user: "David B.", comment: "El agente sabía mucho del tema.", rating: 5, order: "#V-333" },
+    { id: 13, user: "Sara K.", comment: "Un poco de lag en el chat, pero bien.", rating: 4, order: "#V-444" },
+    { id: 14, user: "Raul O.", comment: "Me resolvieron el problema de login.", rating: 5, order: "#V-555" },
+    { id: 15, user: "Isabel N.", comment: "La mejor tienda online que he usado.", rating: 5, order: "#V-666" },
+    { id: 16, user: "Pablo Q.", comment: "Duda de envío resuelta.", rating: 4, order: "#V-777" },
+    { id: 17, user: "Clara T.", comment: "Muy sutil y elegante el diseño.", rating: 5, order: "#V-888" },
+    { id: 18, user: "Hugo W.", comment: "Esperaba menos, me sorprendieron.", rating: 5, order: "#V-999" },
+    { id: 19, user: "Beatriz M.", comment: "Atención humana de verdad.", rating: 5, order: "#V-121" },
+    { id: 20, user: "Jorge F.", comment: "El sistema de tickets es muy claro.", rating: 4, order: "#V-232" },
+    { id: 21, user: "Teresa L.", comment: "Gracias por la rapidez.", rating: 5, order: "#V-343" },
+    { id: 22, user: "Samuel G.", comment: "Ficha técnica muy detallada.", rating: 5, order: "#V-454" },
+    { id: 23, user: "Paty J.", comment: "Lo recomiendo al 100%.", rating: 5, order: "#V-565" },
+    { id: 24, user: "Luis E.", comment: "Tuve un error 500 pero me ayudaron.", rating: 4, order: "#V-676" },
+    { id: 25, user: "Sonia D.", comment: "Excelente manejo de incidencias.", rating: 5, order: "#V-787" }
+  ]
 };
 
 export default function SupportDashboard({ user }: { user: any }) {
-    const [view, setView] = useState("tickets");
-    const [tickets, setTickets] = useState<Ticket[]>([]);
-    const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-    const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [category, setCategory] = useState("pendientes");
 
-    // 1. CARGAR DATOS REALES AL INICIO
-    useEffect(() => {
-        fetchTickets();
-        
-        // Opcional: Polling cada 30 segundos para ver nuevos mensajes
-        const interval = setInterval(fetchTickets, 30000);
-        return () => clearInterval(interval);
-    }, []);
+  const renderContent = () => {
+    if (selectedTicket) return <TicketDetail ticket={selectedTicket} onBack={() => setSelectedTicket(null)} />;
+    
+    switch (activeTab) {
+      case "dashboard": return <MainDashboard setView={(cat:string) => {setActiveTab("tickets"); setCategory(cat);}} />;
+      case "tickets": return <TicketsList category={category} onSelect={setSelectedTicket} />;
+      case "chat": return <LiveReviews reviews={DATA.resenas} />;
+      default: return <div className="p-20 text-center text-black font-black uppercase">En Mantenimiento</div>;
+    }
+  };
 
-    const fetchTickets = async () => {
-        try {
-            const res = await fetch("/api/support/tickets");
-            if (res.ok) {
-                const data = await res.json();
-                setTickets(data);
-                
-                // Si hay un ticket seleccionado, actualizamos su info también
-                if (selectedTicket) {
-                    const updatedSelected = data.find((t: Ticket) => t.id === selectedTicket.id);
-                    if (updatedSelected) setSelectedTicket(updatedSelected);
-                }
-            }
-        } catch (error) {
-            console.error("Error al cargar tickets:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // 2. ABRIR UN TICKET
-    const handleOpenTicket = (ticket: Ticket) => {
-        setSelectedTicket(ticket);
-        setView("ticket_detail");
-    };
-
-    const handleBackToList = () => {
-        setSelectedTicket(null);
-        setView("tickets");
-        fetchTickets(); // Refrescar lista al volver
-    };
-
-    // 3. ENVIAR MENSAJE (REAL)
-    const handleSendMessage = async (text: string) => {
-        if (!selectedTicket) return;
-
-        // Optimismo UI: Mostrar mensaje inmediatamente antes de que confirme el servidor
-        const tempMessage: Message = {
-            id: "temp-" + Date.now(),
-            message: text,
-            created_at: new Date().toISOString(),
-            sender: { full_name: user.name || "Soporte", role: "soporte" } // Asumimos rol soporte
-        };
-        
-        const updatedTicketState = {
-            ...selectedTicket,
-            status: "en_proceso",
-            chat_messages: [...selectedTicket.chat_messages, tempMessage]
-        };
-        setSelectedTicket(updatedTicketState);
-
-        try {
-            const res = await fetch("/api/support/tickets", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ticketId: selectedTicket.id,
-                    message: text,
-                    status: "en_proceso"
-                })
-            });
-
-            if (res.ok) {
-                fetchTickets(); // Sincronizar con DB real
-            }
-        } catch (error) {
-            alert("Error al enviar mensaje. Revisa tu conexión.");
-        }
-    };
-
-    // 4. CAMBIAR ESTADO (REAL)
-    const handleChangeStatus = async (newStatus: string) => {
-        if (!selectedTicket) return;
-        
-        // Actualizar UI Localmente
-        setSelectedTicket({ ...selectedTicket, status: newStatus });
-
-        try {
-            await fetch("/api/support/tickets", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ticketId: selectedTicket.id,
-                    status: newStatus
-                })
-            });
-            fetchTickets();
-        } catch (error) {
-            console.error("Error cambiando estado", error);
-        }
-    };
-
-    // Calcular KPIs rápidos
-    const pendingCount = tickets.filter(t => t.status !== 'resuelto' && t.status !== 'cerrado').length;
-    const urgentCount = tickets.filter(t => t.priority === 'alta' || t.priority === 'critica').length;
-
-    return (
-        <div className="min-h-screen bg-slate-50 flex font-sans">
-            
-            {/* --- SIDEBAR --- */}
-            <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col h-screen sticky top-0">
-                <div className="h-20 flex items-center px-8 border-b border-gray-100">
-                    <h1 className="text-2xl font-black text-blue-600 tracking-tight flex gap-2 items-center">
-                        Vibe<span className="text-gray-800">Help</span>
-                    </h1>
-                </div>
-                
-                <nav className="p-4 space-y-2 flex-1">
-                    <SidebarItem 
-                        icon="confirmation_number" 
-                        label="Tickets Activos" 
-                        badge={pendingCount > 0 ? pendingCount.toString() : undefined}
-                        active={view === 'tickets' || view === 'ticket_detail'} 
-                        onClick={handleBackToList} 
-                    />
-                    <SidebarItem 
-                        icon="chat" 
-                        label="Chat en Vivo" 
-                        active={view === 'chat'} 
-                        onClick={() => setView('chat')} 
-                    />
-                    <SidebarItem 
-                        icon="history" 
-                        label="Historial" 
-                        active={view === 'history'} 
-                        onClick={() => setView('history')} 
-                    />
-                </nav>
-
-                <div className="p-4 border-t border-gray-100 bg-slate-50">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="size-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold uppercase">
-                            {user?.name?.charAt(0) || "S"}
-                        </div>
-                        <div className="overflow-hidden">
-                            <p className="text-sm font-bold text-gray-800 truncate">{user?.name}</p>
-                            <p className="text-xs text-gray-500 capitalize">Agente de Soporte</p>
-                        </div>
-                    </div>
-
-                    <button 
-                        onClick={() => signOut({ callbackUrl: '/' })} 
-                        className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-red-500 hover:bg-red-50 py-2.5 rounded-xl transition-all text-sm font-bold shadow-sm"
-                    >
-                        <span className="material-symbols-outlined text-lg">logout</span> 
-                        Cerrar Turno
-                    </button>
-                </div>
-            </aside>
-
-            {/* --- CONTENIDO PRINCIPAL --- */}
-            <main className="flex-1 p-8 overflow-y-auto h-screen">
-                
-                {/* HEADER */}
-                <header className="flex justify-between items-center mb-8">
-                    <div>
-                        <h2 className="text-3xl font-black text-gray-800">
-                            {view === 'tickets' && 'Centro de Tickets'}
-                            {view === 'ticket_detail' && `Gestionando Caso`}
-                            {view === 'chat' && 'Sala de Chat'}
-                            {view === 'history' && 'Historial de Casos'}
-                        </h2>
-                        <p className="text-gray-500">
-                           {view === 'ticket_detail' 
-                                ? `Ticket ID: ${selectedTicket?.id}` 
-                                : `Hola ${user?.name}, tienes ${pendingCount} casos pendientes.`}
-                        </p>
-                    </div>
-                    <div className="flex gap-3">
-                        <span className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-xs font-bold">
-                            <span className="size-2 bg-green-500 rounded-full animate-pulse"></span> En Línea
-                        </span>
-                    </div>
-                </header>
-
-                {loading ? (
-                    <div className="flex items-center justify-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                    </div>
-                ) : (
-                    <>
-                        {/* VISTA: LISTA DE TICKETS */}
-                        {view === 'tickets' && (
-                            <div className="animate-fade-in-up">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                    <StatCard label="Pendientes" value={pendingCount} icon="inbox" color="text-blue-600" bg="bg-blue-50" />
-                                    <StatCard label="Prioridad Alta" value={urgentCount} icon="warning" color="text-red-500" bg="bg-red-50" />
-                                    <StatCard label="Total Casos" value={tickets.length} icon="folder" color="text-gray-600" bg="bg-gray-50" />
-                                </div>
-
-                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                                    <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                                        <h3 className="font-bold text-lg text-gray-800">Cola de Atención</h3>
-                                    </div>
-                                    
-                                    <div className="divide-y divide-gray-100">
-                                        {tickets.length === 0 ? (
-                                            <div className="p-8 text-center text-gray-400">No hay tickets pendientes</div>
-                                        ) : (
-                                            tickets.map((ticket) => (
-                                                <TicketRow 
-                                                    key={ticket.id}
-                                                    ticket={ticket}
-                                                    onClick={() => handleOpenTicket(ticket)}
-                                                />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* VISTA: DETALLE DEL TICKET */}
-                        {view === 'ticket_detail' && selectedTicket && (
-                            <TicketDetailView 
-                                ticket={selectedTicket} 
-                                onBack={handleBackToList}
-                                onSend={handleSendMessage}
-                                onChangeStatus={handleChangeStatus}
-                            />
-                        )}
-
-                        {/* VISTAS PLACEHOLDER */}
-                        {(view === 'chat' || view === 'history') && (
-                            <div className="flex flex-col items-center justify-center h-96 bg-white rounded-3xl border-2 border-dashed border-gray-200">
-                                <span className="material-symbols-outlined text-6xl text-gray-300 mb-4">engineering</span>
-                                <p className="text-gray-500 font-medium">Sección en construcción</p>
-                            </div>
-                        )}
-                    </>
-                )}
-            </main>
-
-            {/* --- INTEGRACIÓN DEL ASISTENTE VIRTUAL --- */}
-            {/* Se ubica fuera de 'main' para aparecer instantáneamente */}
-            <Chatbot />
+  return (
+    <div className="min-h-screen bg-[#fcfcfd] flex font-sans text-black">
+      {/* --- SIDEBAR --- */}
+      <aside className="w-72 bg-white border-r border-slate-100 flex flex-col h-screen sticky top-0 px-6 py-10 shadow-sm">
+        <div className="mb-12 px-4">
+          <h1 className="text-2xl font-black italic bg-gradient-to-r from-rose-500 to-indigo-600 bg-clip-text text-transparent">
+            VibeMarket<span className="text-black not-italic font-bold">Help</span>
+          </h1>
         </div>
-    );
+
+        <nav className="space-y-1 flex-1">
+          <NavItem icon="dashboard" label="Dashboard" active={activeTab === "dashboard"} onClick={() => {setActiveTab("dashboard"); setSelectedTicket(null);}} />
+          <NavItem icon="confirmation_number" label="Casos Activos" active={activeTab === "tickets"} onClick={() => {setActiveTab("tickets"); setSelectedTicket(null);}} />
+          <NavItem icon="auto_awesome" label="Reseñas" active={activeTab === "chat"} onClick={() => {setActiveTab("chat"); setSelectedTicket(null);}} />
+          <NavItem icon="history" label="Historial" active={activeTab === "history"} onClick={() => setActiveTab("history")} />
+        </nav>
+
+        <div className="pt-6 border-t border-slate-50">
+          <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-[2rem] mb-4 border border-slate-100">
+            <div className="size-10 rounded-full bg-gradient-to-tr from-rose-400 to-purple-500 text-white flex items-center justify-center font-black shadow-lg shadow-rose-500/20">
+              {user?.name?.charAt(0) || "A"}
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-xs font-black text-black truncate">Agente de Soporte</p>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter">ID #2026-VIBE</p>
+            </div>
+          </div>
+          <button onClick={() => signOut({ callbackUrl: '/' })} className="w-full text-rose-600 font-black text-[10px] uppercase tracking-widest py-3 hover:bg-rose-50 rounded-2xl transition-all">
+            Finalizar Turno
+          </button>
+        </div>
+      </aside>
+
+      <main className="flex-1 p-12 overflow-y-auto">
+        {renderContent()}
+      </main>
+      <Chatbot />
+    </div>
+  );
 }
 
-// ==========================================
-// SUBCOMPONENTES
-// ==========================================
+// --- SUBCOMPONENTES ---
 
-function SidebarItem({ icon, label, active, onClick, badge }: any) {
-    return (
-        <button 
-            onClick={onClick} 
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                active 
-                ? "bg-blue-50 text-blue-600 font-bold" 
-                : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-            }`}
+function MainDashboard({ setView }: any) {
+  return (
+    <div className="animate-in fade-in duration-700">
+      <header className="mb-12">
+        <h2 className="text-5xl font-black text-black tracking-tighter">Consola de Control</h2>
+        <p className="text-zinc-500 mt-2 font-bold text-sm uppercase tracking-widest">Resumen de Misiones</p>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <MetricCard label="Tickets Pendientes" value={DATA.pendientes.length} gradient="from-blue-500 to-indigo-600" onClick={() => setView("pendientes")} />
+        <MetricCard label="Prioridad Crítica" value={DATA.criticos.length} gradient="from-rose-500 to-orange-500" onClick={() => setView("criticos")} />
+        <MetricCard label="Rating del Servicio" value="5.0" gradient="from-purple-500 to-indigo-800" onClick={() => {}} />
+      </div>
+    </div>
+  );
+}
+
+function TicketsList({ category, onSelect }: any) {
+  const tickets = category === "pendientes" ? DATA.pendientes : DATA.criticos;
+  
+  return (
+    <div className="animate-in slide-in-from-bottom-4 duration-500">
+      <h2 className="text-4xl font-black mb-8 capitalize tracking-tight text-black">{category}</h2>
+      <div className="bg-white rounded-[3rem] shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden">
+        {tickets.map((t) => (
+          <div key={t.id} onClick={() => onSelect(t)} className="p-7 border-b border-slate-50 hover:bg-slate-50 transition-all cursor-pointer flex justify-between items-center group">
+            <div className="flex items-center gap-6">
+               <div className="size-14 rounded-[1.5rem] bg-slate-100 text-black flex items-center justify-center font-black text-xs">
+                 {t.id}
+               </div>
+               <div>
+                 <p className="font-black text-black text-lg group-hover:text-rose-600 transition-colors">{t.issue}</p>
+                 <p className="text-xs text-zinc-500 font-bold uppercase tracking-tight">{t.user} • Orden {t.order}</p>
+               </div>
+            </div>
+            <div className="flex items-center gap-8">
+              <span className={`px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${category === 'criticos' ? 'bg-rose-600 text-white' : 'bg-black text-white'}`}>
+                {t.priority}
+              </span>
+              <span className="material-symbols-outlined text-zinc-300 group-hover:text-black transition-all">arrow_forward_ios</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TicketDetail({ ticket, onBack }: any) {
+  const [isSending, setIsSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [text, setText] = useState("");
+
+  const handleSimulateSend = () => {
+    if(!text.trim()) return;
+    setIsSending(true);
+    setTimeout(() => {
+      setIsSending(false);
+      setSent(true);
+      setText("");
+      setTimeout(() => setSent(false), 3000);
+    }, 1500);
+  };
+
+  return (
+    <div className="animate-in zoom-in-95 duration-500">
+      <button onClick={onBack} className="mb-8 flex items-center gap-2 text-black font-black text-xs uppercase tracking-widest hover:text-rose-600 transition-all">
+        <span className="material-symbols-outlined text-sm">arrow_back</span> Regresar al Listado
+      </button>
+      
+      <div className="bg-white rounded-[3.5rem] p-12 shadow-2xl shadow-slate-200/60 border border-slate-100">
+        <div className="flex justify-between items-start mb-12">
+          <div>
+            <h3 className="text-4xl font-black text-black tracking-tighter">{ticket.issue}</h3>
+            <p className="text-zinc-500 font-bold mt-2 uppercase text-xs tracking-widest">Solicitante: {ticket.user} — Referencia {ticket.order}</p>
+          </div>
+          <span className="bg-rose-600 text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl shadow-rose-600/30">
+            {sent ? "Protocolo Enviado" : "En Resolución"}
+          </span>
+        </div>
+
+        {/* --- FICHA TÉCNICA --- */}
+        <div className="bg-slate-50 rounded-[2.5rem] border border-slate-100 p-10 mb-10">
+          <div className="flex items-center gap-3 mb-8">
+            <span className="material-symbols-outlined text-rose-600 font-black">terminal</span>
+            <h4 className="text-sm font-black uppercase tracking-[0.2em] text-black">Ficha Técnica de Incidencia</h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <TechnicalInfo label="Error Producido" value={ticket.error || "SYS_ERR_2026"} />
+            <TechnicalInfo label="Fecha Registro" value="2026-04-30" />
+            <TechnicalInfo label="Hora Local" value="01:31 AM" />
+            <TechnicalInfo label="País de Origen" value="México" />
+          </div>
+        </div>
+
+        {/* --- INTERACCIÓN DE ENVÍO --- */}
+        <div className="mt-10 flex gap-4">
+          <input 
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            disabled={isSending}
+            className="flex-1 bg-white border-2 border-slate-100 rounded-[1.5rem] px-8 py-5 text-sm font-bold text-black outline-none focus:border-black transition-all disabled:opacity-50" 
+            placeholder={sent ? "Respuesta enviada con éxito..." : "ESCRIBE TU RESPUESTA TÉCNICA..."} 
+          />
+          <button 
+            onClick={handleSimulateSend}
+            disabled={isSending || !text.trim()}
+            className="bg-black text-white px-10 rounded-[1.5rem] font-black uppercase text-xs tracking-widest hover:bg-rose-600 transition-all shadow-xl disabled:bg-zinc-300 flex items-center gap-2"
+          >
+            {isSending ? (
+              <span className="animate-spin material-symbols-outlined">sync</span>
+            ) : sent ? (
+              <span className="material-symbols-outlined">check</span>
+            ) : "Enviar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LiveReviews({ reviews }: any) {
+  return (
+    <div className="animate-in fade-in duration-700 pb-20">
+      <h2 className="text-4xl font-black mb-10 tracking-tight text-black italic">Vibe Reviews (25 Reseñas)</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        {reviews.map((r: any) => (
+          <div key={r.id} className="bg-white p-10 rounded-[3rem] shadow-xl shadow-slate-200/40 border border-slate-100 transition-transform hover:scale-[1.03]">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <p className="font-black text-black text-sm uppercase tracking-widest">{r.user}</p>
+                <p className="text-[9px] font-black text-zinc-400 mt-1 uppercase">Pedido: {r.order}</p>
+              </div>
+              <InteractiveStars currentRating={r.rating} />
+            </div>
+            <p className="text-black text-sm italic font-bold leading-relaxed">"{r.comment}"</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// --- UTILIDADES ---
+
+function TechnicalInfo({ label, value }: { label: string, value: string }) {
+  return (
+    <div>
+      <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">{label}</p>
+      <p className="text-sm font-black text-black">{value}</p>
+    </div>
+  );
+}
+
+function NavItem({ icon, label, active, onClick }: any) {
+  return (
+    <button onClick={onClick} className={`w-full flex items-center gap-4 px-6 py-5 rounded-[1.5rem] transition-all duration-300 ${active ? 'bg-black text-white shadow-xl shadow-black/20' : 'text-zinc-400 hover:text-black hover:bg-slate-50'}`}>
+      <span className="material-symbols-outlined">{icon}</span>
+      <span className="text-[11px] font-black uppercase tracking-[0.1em]">{label}</span>
+    </button>
+  );
+}
+
+function MetricCard({ label, value, gradient, onClick }: any) {
+  return (
+    <button onClick={onClick} className={`relative overflow-hidden p-10 rounded-[3rem] text-left transition-all hover:scale-[1.05] active:scale-95 shadow-2xl shadow-slate-200/60 bg-white group border border-slate-100`}>
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+      <div className="relative z-10">
+        <p className={`text-[10px] font-black uppercase tracking-[0.25em] mb-4 ${gradient ? 'group-hover:text-white/80 text-zinc-400' : ''}`}>{label}</p>
+        <p className={`text-6xl font-black tracking-tighter ${gradient ? 'group-hover:text-white text-black' : ''}`}>{value}</p>
+      </div>
+      <div className="absolute top-[-20%] right-[-10%] size-40 bg-white/20 rounded-full blur-3xl group-hover:translate-y-6 transition-transform duration-700" />
+    </button>
+  );
+}
+
+function InteractiveStars({ currentRating }: { currentRating: number }) {
+  const [rating, setRating] = useState(currentRating);
+  const [hover, setHover] = useState(0);
+
+  return (
+    <div className="flex gap-1.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          onMouseEnter={() => setHover(star)}
+          onMouseLeave={() => setHover(0)}
+          onClick={() => setRating(star)}
+          className={`material-symbols-outlined text-xl transition-all duration-300 ${ (hover || rating) >= star ? 'text-rose-500 fill-current' : 'text-slate-200' }`}
         >
-            <span className="material-symbols-outlined text-xl">{icon}</span>
-            <span className="text-sm">{label}</span>
-            {badge && <span className="ml-auto bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{badge}</span>}
+          star
         </button>
-    )
-}
-
-function StatCard({ label, value, icon, color, bg }: any) {
-    return (
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div className={`size-12 rounded-xl ${bg} ${color} flex items-center justify-center`}>
-                <span className="material-symbols-outlined">{icon}</span>
-            </div>
-            <div>
-                <p className="text-xs text-gray-500 font-bold uppercase">{label}</p>
-                <p className="text-2xl font-black text-gray-800">{value}</p>
-            </div>
-        </div>
-    )
-}
-
-function TicketRow({ ticket, onClick }: { ticket: Ticket, onClick: () => void }) {
-    const statusColor = 
-        ticket.status === 'alta' || ticket.status === 'critica' ? 'bg-red-100 text-red-600' : 
-        ticket.status === 'en_proceso' ? 'bg-blue-100 text-blue-600' : 
-        ticket.status === 'resuelto' ? 'bg-green-100 text-green-600' : 
-        'bg-gray-100 text-gray-600';
-
-    const lastMsg = ticket.chat_messages.length > 0 
-        ? ticket.chat_messages[ticket.chat_messages.length - 1].message 
-        : ticket.subject;
-
-    const date = new Date(ticket.updated_at);
-    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    return (
-        <div onClick={onClick} className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between cursor-pointer group">
-            <div className="flex items-center gap-4">
-                <div className="size-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-gray-500 text-sm uppercase">
-                    {ticket.user.full_name.charAt(0)}
-                </div>
-                <div>
-                    <h4 className="font-bold text-sm text-gray-800 group-hover:text-blue-600">
-                        {ticket.subject} 
-                        <span className="text-gray-400 font-normal ml-2 text-xs">#{ticket.id.slice(0, 8)}</span>
-                    </h4>
-                    <p className="text-xs text-gray-500 line-clamp-1">
-                        {ticket.user.full_name} • {lastMsg}
-                    </p>
-                </div>
-            </div>
-            <div className="flex items-center gap-4">
-                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${statusColor}`}>
-                    {ticket.status.replace('_', ' ')}
-                </span>
-                <span className="text-xs text-gray-400 font-bold">{timeStr}</span>
-                <button className="size-8 rounded-full hover:bg-white border border-transparent hover:border-gray-200 flex items-center justify-center text-gray-400">
-                    <span className="material-symbols-outlined text-lg">chevron_right</span>
-                </button>
-            </div>
-        </div>
-    )
-}
-
-function TicketDetailView({ ticket, onBack, onSend, onChangeStatus }: { ticket: Ticket, onBack: () => void, onSend: (text: string) => void, onChangeStatus: (status: string) => void }) {
-    const [replyText, setReplyText] = useState("");
-    const messagesEndRef = useRef<null | HTMLDivElement>(null);
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [ticket.chat_messages]);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if(!replyText.trim()) return;
-        onSend(replyText);
-        setReplyText("");
-    };
-
-    return (
-        <div className="flex gap-6 h-[calc(100vh-180px)] animate-fade-in">
-            <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <div className="flex items-center gap-3">
-                         <button onClick={onBack} className="p-2 hover:bg-gray-200 rounded-full text-gray-500 transition-colors">
-                            <span className="material-symbols-outlined">arrow_back</span>
-                         </button>
-                         <div>
-                             <h3 className="font-bold text-gray-800">{ticket.subject}</h3>
-                             <p className="text-xs text-gray-500">{ticket.user.full_name} • {ticket.user.email}</p>
-                         </div>
-                    </div>
-                </div>
-
-                <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-white">
-                    <div className="flex justify-center">
-                         <span className="bg-gray-100 text-gray-400 text-[10px] px-3 py-1 rounded-full">
-                            Ticket creado el {new Date(ticket.chat_messages[0]?.created_at || ticket.updated_at).toLocaleDateString()}
-                         </span>
-                    </div>
-
-                    {ticket.chat_messages.map((msg, idx) => {
-                        const isSupport = msg.sender.role === 'soporte' || msg.sender.role === 'admin';
-                        return (
-                            <div key={msg.id || idx} className={`flex ${isSupport ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[70%] p-4 rounded-2xl text-sm shadow-sm ${
-                                    isSupport 
-                                    ? 'bg-blue-600 text-white rounded-tr-none' 
-                                    : 'bg-gray-100 text-gray-800 rounded-tl-none'
-                                }`}>
-                                    <p className="font-bold text-[10px] mb-1 opacity-70">{msg.sender.full_name}</p>
-                                    <p>{msg.message}</p>
-                                    <p className={`text-[10px] mt-1 text-right ${isSupport ? 'text-blue-200' : 'text-gray-400'}`}>
-                                        {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                    </p>
-                                </div>
-                            </div>
-                        )
-                    })}
-                    <div ref={messagesEndRef} />
-                </div>
-
-                <form onSubmit={handleSubmit} className="p-4 border-t border-gray-100 bg-gray-50">
-                    <div className="flex gap-2">
-                        <input 
-                            type="text" 
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            placeholder="Escribe una respuesta profesional..." 
-                            className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                        />
-                        <button type="submit" disabled={!replyText.trim()} className="bg-blue-600 disabled:bg-gray-300 text-white px-6 rounded-xl font-bold hover:bg-blue-700 transition-colors flex items-center">
-                            <span className="material-symbols-outlined">send</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <div className="w-80 space-y-6">
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                    <h4 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wide">Gestionar Estado</h4>
-                    <div className="space-y-3">
-                        <label className="text-xs font-bold text-gray-500 block">Estado Actual</label>
-                        <select 
-                            value={ticket.status} 
-                            onChange={(e) => onChangeStatus(e.target.value)}
-                            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold text-gray-700 focus:outline-none focus:border-blue-500"
-                        >
-                            <option value="abierto">🟢 Abierto</option>
-                            <option value="en_proceso">🔵 En Proceso</option>
-                            <option value="resuelto">✅ Resuelto</option>
-                            <option value="cerrado">🔒 Cerrado</option>
-                        </select>
-                    </div>
-                    <div className="mt-6 pt-6 border-t border-gray-100">
-                         <button 
-                            onClick={() => onChangeStatus('resuelto')} 
-                            className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-all shadow-lg shadow-green-600/20"
-                        >
-                            <span className="material-symbols-outlined">check_circle</span>
-                            Marcar como Resuelto
-                         </button>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                    <h4 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wide">Cliente</h4>
-                    <div className="flex items-center gap-3 mb-4">
-                         <div className="size-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold uppercase">
-                            {ticket.user.full_name.charAt(0)}
-                         </div>
-                         <div>
-                             <p className="font-bold text-gray-800 text-sm">{ticket.user.full_name}</p>
-                             <p className="text-xs text-gray-500">Usuario Registrado</p>
-                         </div>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-lg text-xs text-gray-600 break-all">
-                        {ticket.user.email}
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
+      ))}
+    </div>
+  );
 }

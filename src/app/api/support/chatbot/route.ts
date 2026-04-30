@@ -4,7 +4,22 @@ const FAQ_DATABASE = [
   // --- SALUDOS Y BIENVENIDA ---
   {
     keywords: ['hola', 'buen', 'dias', 'tardes', 'noches', 'saludos', 'que tal'],
-    answer: "¡Hola! Soy el asistente virtual de VibeMarket. Estoy aquí para ayudarte con tus compras, pedidos y dudas técnicas. ¿Qué tienes en mente?"
+    answer: "¡Hola! Soy el asistente virtual de Vibe Market. Estoy aquí para ayudarte con tus compras, pedidos y dudas técnicas. ¿Qué tienes en mente?"
+  },
+
+  // --- PRODUCTOS Y CATÁLOGO (Basado en la imagen de la tienda) ---
+  {
+    keywords: ['producto', 'venden', 'catalogo', 'que hay', 'comprar', 'lista'],
+    answer: "¡Claro! En Vibe Market tenemos estos productos disponibles ahora mismo:\n\n" +
+            "☕ Cafetera Italiana Moka Pot - $850.00\n" +
+            "🎮 PlayStation 5 Controller - $1,399.00\n" +
+            "🪑 Silla Eames Replica - $1,250.00\n" +
+            "🖱️ Mouse Gamer Logitech G502 - $1,200.00\n" +
+            "⌨️ Teclado Mecánico RGB - $1,800.00\n" +
+            "🕶️ Gafas de Sol Ray-Ban Aviator - $3,200.00\n" +
+            "🎧 Sony WH-1000XM5 Noise Cancelling - $6,499.00\n" +
+            "🌿 Planta Monstera Deliciosa - $600.00\n\n" +
+            "¿Te interesa alguno en especial?"
   },
 
   // --- PROCESO DE COMPRA Y PEDIDOS ---
@@ -24,7 +39,7 @@ const FAQ_DATABASE = [
   // --- ENVÍOS Y ENTREGA ---
   {
     keywords: ['costo de envio', 'precio envio', 'cuanto cuesta el envio', 'envio gratis'],
-    answer: "El costo de envío depende de tu ubicación. Ofrecemos envío gratis en compras superiores a $999 pesos. Para pedidos menores, el costo estándar es de $99 pesos."
+    answer: "Ofrecemos envío gratis en compras superiores a $999 pesos. Para pedidos menores, el costo estándar es de $99 pesos."
   },
   {
     keywords: ['tiempo', 'tarda', 'llegar', 'cuando llega', 'plazo'],
@@ -62,23 +77,28 @@ const FAQ_DATABASE = [
   // --- SOPORTE HUMANO ---
   {
     keywords: ['humano', 'agente', 'persona', 'ayuda', 'asesor', 'contacto', 'whatsapp', 'telefono'],
-    answer: "Si necesitas hablar con una persona, nuestro equipo de soporte está disponible por WhatsApp al +52 (953) 123-4567 o puedes enviarnos un correo a soporte@vibemarket.com de lunes a viernes de 9am a 6pm."
+    answer: "Si necesitas hablar con una persona, nuestro equipo de soporte está disponible por WhatsApp al +52 (953) 123-4567 de lunes a viernes de 9am a 6pm."
   }
 ];
 
 export async function POST(req: Request) {
   try {
     const { message } = await req.json();
-    const query = message.toLowerCase();
+    
+    // Normalizamos el mensaje: minúsculas y sin acentos para que la búsqueda sea más robusta
+    const query = message
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
 
-    // Lógica de búsqueda mejorada
+    // Buscamos si alguna palabra clave del usuario coincide con nuestra base de datos
     const match = FAQ_DATABASE.find(item => 
       item.keywords.some(key => query.includes(key))
     );
 
     const reply = match 
       ? match.answer 
-      : "Lo siento, no tengo una respuesta exacta para eso. ¿Podrías intentar con palabras clave como 'envío', 'pedidos', 'pagos' o 'devoluciones'? También puedes pedir hablar con un 'agente'.";
+      : "Lo siento, no tengo una respuesta exacta para eso. ¿Podrías intentar con palabras clave como 'productos', 'envío', 'pagos' o 'devoluciones'?";
 
     return NextResponse.json({ reply });
   } catch (error) {
