@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function BuyerDashboard({ user }: { user: any }) {
-  const [payments, setPayments] = useState<any[]>([]); 
+  const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   
@@ -63,7 +63,7 @@ export default function BuyerDashboard({ user }: { user: any }) {
   if (loading) return <div className="p-20 text-center font-bold text-gray-400">Cargando historial...</div>;
 
   return (
-    <div className="min-h-screen bg-white p-8">
+    <div className="min-h-screen bg-[#fcfcfd] p-8 text-black">
       <div className="max-w-4xl mx-auto text-center mb-10">
         <h1 className="text-4xl font-black text-red-600 mb-2">Hola, {user?.name || "Aria"}</h1>
         <p className="text-gray-500">Aquí está el resumen de tus compras y pagos.</p>
@@ -184,7 +184,7 @@ export default function BuyerDashboard({ user }: { user: any }) {
         </div>
 
       </div>
-
+      {/* ... Resto del Modal (Mantener igual con texto en negro) ... */}
       {/* --- MODAL DEL COMPROBANTE --- */}
       {selectedPayment && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -268,3 +268,4 @@ export default function BuyerDashboard({ user }: { user: any }) {
     </div>
   );
 }
+

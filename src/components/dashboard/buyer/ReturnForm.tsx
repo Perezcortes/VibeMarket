@@ -1,60 +1,97 @@
-// src/components/dashboard/buyer/ReturnForm.tsx
 "use client";
 import React, { useState } from 'react';
-import { useReturnRequestPresenter } from '@/components/dashboard/buyer/ReturnRequest.presenter';
 
-interface Props {
+interface ReturnFormProps {
   orderId: string;
   onComplete: () => void;
 }
 
-export const ReturnForm = ({ orderId, onComplete }: Props) => {
-  const [reason, setReason] = useState("");
+export function ReturnForm({ orderId, onComplete }: ReturnFormProps) {
+  const [reason, setReason] = useState("Cambio de opinión / No deseado");
   const [description, setDescription] = useState("");
-  
-  const { submitReturn, loading, error } = useReturnRequestPresenter(orderId, onComplete);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch('/api/support/returns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, reason, description }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        onComplete(); // Activa la vista de éxito en la página principal
+      } else {
+        // Muestra el error específico (ej: "Ya existe una solicitud")
+        setError(data.error || "Error al procesar la devolución.");
+      }
+    } catch (err) {
+      setError("Fallo de conexión con el protocolo técnico.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-      <h3 className="text-lg font-semibold mb-4 text-gray-800">Solicitar Devolución</h3>
-      
-      {error && <p className="text-red-500 text-sm mb-3">⚠️ {error}</p>}
+    <div className="bg-white rounded-[3.5rem] p-12 shadow-2xl animate-in fade-in slide-in-from-right-10 duration-500">
+      <h2 className="text-4xl font-black italic uppercase tracking-tighter text-black mb-2">Nueva Solicitud</h2>
+      <p className="text-[9px] font-black text-rose-600 uppercase tracking-[0.3em] mb-10">Referencia: {orderId}</p>
 
-      <div className="space-y-4">
+      {error && (
+        <div className="mb-8 p-6 bg-rose-50 border-l-4 border-rose-600 rounded-2xl flex items-center gap-4 animate-shake">
+          <span className="material-symbols-outlined text-rose-600">warning</span>
+          <p className="text-[10px] font-black uppercase text-rose-600 tracking-widest">{error}</p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-10">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Motivo</label>
+          <label className="text-[10px] font-black uppercase text-zinc-400 tracking-[0.3em] mb-4 block">Motivo del Retorno</label>
           <select 
-            className="mt-1 block w-full border rounded-md p-2"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
+            className="w-full bg-slate-50 border-none p-6 rounded-[1.5rem] font-black text-black outline-none appearance-none cursor-pointer focus:ring-2 focus:ring-[#f05cf0]/20 transition-all"
           >
-            <option value="">Selecciona una opción...</option>
-            <option value="defective">Producto defectuoso</option>
-            <option value="not_as_described">No es lo que pedí</option>
-            <option value="changed_mind">Ya no lo quiero</option>
+            <option>Cambio de opinión / No deseado</option>
+            <option>Producto defectuoso / Error técnico</option>
+            <option>No coincide con la descripción</option>
+            <option>Paquete dañado durante transporte</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Comentarios adicionales</label>
+          <label className="text-[10px] font-black uppercase text-zinc-400 tracking-[0.3em] mb-4 block">Diagnóstico del Usuario</label>
           <textarea 
-            className="mt-1 block w-full border rounded-md p-2 h-24"
-            placeholder="Describe brevemente el problema..."
+            required
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe el estado técnico del producto..."
+            className="w-full bg-slate-50 border-none p-8 rounded-[2rem] font-bold text-black outline-none h-40 resize-none focus:ring-2 focus:ring-[#f05cf0]/20 transition-all placeholder:text-zinc-300"
           />
         </div>
 
-        <button
-          onClick={() => submitReturn(reason, description)}
+        <button 
+          type="submit"
           disabled={loading}
-          className={`w-full py-2 px-4 rounded-md text-white font-bold transition-colors ${
-            loading ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700'
-          }`}
+          className="w-full bg-black text-white py-6 rounded-full font-black uppercase text-[11px] tracking-[0.4em] flex items-center justify-center gap-4 hover:bg-[#f05cf0] transition-all shadow-xl active:scale-95 disabled:opacity-50"
         >
-          {loading ? 'Procesando...' : 'Confirmar Devolución'}
+          {loading ? (
+            <span className="animate-pulse">Procesando...</span>
+          ) : (
+            <>
+              <span className="material-symbols-outlined">send</span>
+              Confirmar Solicitud Técnica
+            </>
+          )}
         </button>
-      </div>
+      </form>
     </div>
   );
-};
+}
