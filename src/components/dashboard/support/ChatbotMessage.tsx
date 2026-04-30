@@ -9,18 +9,24 @@ export default function ChatbotMessage({ role, text, time }: MessageProps) {
 
   return (
     <div className={`flex ${isBot ? 'justify-start' : 'justify-end'} animate-fade-in`}>
-      <div className={`max-w-[85%] p-3 rounded-2xl text-xs shadow-sm ${
+      <div className={`max-w-[85%] p-3.5 rounded-2xl text-[12px] shadow-sm leading-relaxed ${
         isBot 
-        ? 'bg-white text-gray-800 rounded-tl-none border border-gray-100' 
-        : 'bg-blue-600 text-white rounded-tr-none'
+          ? 'bg-white text-gray-800 rounded-tl-none border border-gray-100' 
+          : 'bg-red-600 text-white rounded-tr-none'
       }`}>
         {isBot && (
-          <p className="font-bold text-[10px] mb-1 text-blue-600 uppercase tracking-tighter">
-            Asistente Vibe
+          <p className="font-black text-[9px] mb-1 text-red-600 uppercase tracking-widest flex items-center gap-1">
+            <span className="size-1 bg-red-600 rounded-full"></span> 
+            Vibe Market
           </p>
         )}
-        <p className="leading-relaxed">{text}</p>
-        <p className={`text-[9px] mt-1 text-right ${isBot ? 'text-gray-400' : 'text-blue-200'}`}>
+        
+        {/* whitespace-pre-line permite que los \n del catálogo se vean como saltos de línea reales */}
+        <p className="whitespace-pre-line">{text}</p>
+        
+        <p className={`text-[8px] mt-2 text-right font-medium ${
+          isBot ? 'text-gray-400' : 'text-red-200'
+        }`}>
           {time}
         </p>
       </div>
