@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import NavbarUser from "@/components/NavbarUser"; 
 import SearchBar from "./SearchBar"; 
@@ -34,6 +35,14 @@ export default async function Navbar({ user }: { user: any }) {
 
         {/* Menú Derecha */}
         <div className="flex items-center gap-6">
+          
+          {/* Link de Devoluciones (Tu cambio en HEAD) */}
+          <Link href="/dashboard/buyer/returns" className="relative group flex items-center">
+            <span className="material-symbols-outlined text-2xl text-gray-600 group-hover:text-primary transition-colors">assignment_return</span>
+            <span className="sr-only">Devoluciones</span>
+          </Link>
+
+          {/* Carrito con Conteo Dinámico (Combinado) */}
           <Link href="/cart" className="relative group flex items-center">
             <span className="material-symbols-outlined text-2xl text-gray-600 group-hover:text-primary transition-colors">shopping_cart</span>
             

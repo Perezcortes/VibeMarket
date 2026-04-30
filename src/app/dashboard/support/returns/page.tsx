@@ -11,10 +11,9 @@ function ReturnsContent() {
   const [loading, setLoading] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // EFECTO DE CARGA: Traemos el historial completo para que aparezcan las compras nuevas
+  // Sincronización con el historial de compras del usuario
   useEffect(() => {
-  // Ahora traemos TODO el historial del comprador
-  fetch('/api/buyer/history')
+    fetch('/api/buyer/history')
       .then(res => res.json())
       .then(data => {
         const ordersData = Array.isArray(data) ? data : (data.orders || []);
@@ -49,7 +48,7 @@ function ReturnsContent() {
 
   return (
     <main className="min-h-screen p-12 bg-black relative text-white font-sans overflow-hidden">
-       {/* Fondo con degradado sofisticado */}
+       {/* Estética Sofisticada VibeMarket */}
        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a29] via-black to-[#2d1145] opacity-100"></div>
        <div className="absolute -top-24 -right-24 size-96 bg-[#f05cf0] rounded-full blur-[120px] opacity-20"></div>
 
@@ -62,15 +61,13 @@ function ReturnsContent() {
                 <p className="text-white/50 font-bold uppercase text-[10px] tracking-[0.4em] mt-6">Protocolo Técnico de Retorno / VibeMarket 2026</p>
             </div>
 
-            {/* BOTÓN REGRESAR (Blanco Sofisticado) */}
-            <Link href="/dashboard" className="group flex items-center gap-4 px-8 py-4 bg-white text-black rounded-full transition-all hover:bg-[#f05cf0] hover:text-white shadow-2xl shadow-white/5">
+            <Link href="/dashboard" className="group flex items-center gap-4 px-8 py-4 bg-white text-black rounded-full transition-all hover:bg-[#f05cf0] hover:text-white shadow-2xl">
                 <span className="material-symbols-outlined transition-transform group-hover:-translate-x-1">arrow_back</span>
                 <span className="text-xs font-black uppercase tracking-widest">Regresar al menú</span>
             </Link>
           </header>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            {/* PANEL IZQUIERDO: HISTORIAL */}
             <section className="space-y-6">
               <h2 className="text-sm font-black uppercase tracking-[0.3em] mb-8 text-[#f05cf0]">Pedidos Recientes</h2>
               
@@ -82,7 +79,6 @@ function ReturnsContent() {
                 <div className="p-16 border-4 border-dotted border-white/10 rounded-[3rem] bg-white/5 flex flex-col items-center justify-center text-center">
                     <span className="material-symbols-outlined text-5xl mb-4 text-white/20">shopping_bag</span>
                     <p className="font-black uppercase text-xs tracking-widest text-white">Sin registros de compra</p>
-                    <p className="text-white/40 font-bold text-[10px] uppercase tracking-widest mt-2">Tus nuevas adquisiciones aparecerán aquí automáticamente.</p>
                 </div>
               ) : (
                 <div className="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
@@ -99,7 +95,7 @@ function ReturnsContent() {
                             <p className="font-black text-xl text-white tracking-tighter">#{order.id?.substring(0,8).toUpperCase()}</p>
                             <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mt-1">Total Pagado: ${order.total_amount}</p>
                         </div>
-                        <span className={`material-symbols-outlined text-3xl transition-colors ${selectedOrderId === order.id ? 'text-[#f05cf0]' : 'text-white/10 group-hover:text-white/30'}`}>
+                        <span className={`material-symbols-outlined text-3xl transition-colors ${selectedOrderId === order.id ? 'text-[#f05cf0]' : 'text-white/10'}`}>
                             {selectedOrderId === order.id ? 'check_circle' : 'add_circle'}
                         </span>
                         </div>
@@ -109,7 +105,6 @@ function ReturnsContent() {
               )}
             </section>
 
-            {/* PANEL DERECHO: ACCIÓN */}
             <section>
               {selectedOrderId ? (
                 <div className="animate-in fade-in slide-in-from-right-8">
