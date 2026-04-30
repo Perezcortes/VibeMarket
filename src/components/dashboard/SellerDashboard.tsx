@@ -3,21 +3,19 @@ import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import CatalogManager from "@/components/dashboard/seller/CatalogManager";
 import OrdersManager from "@/components/dashboard/seller/orderManager";
-import DiscountsPage from "./seller/discountsManager";
+import DiscountsPage from "@/components/dashboard/seller/discountsManager";
 
-// --- INTERFAZ ---
+
 interface SellerDashboardProps {
     user: any;
-    orders: any[];    // Datos de HU008 formateados por el Presenter
-    stats: any;       // Resumen de gastos de HU008
+    orders: any[];    
+    stats: any;      
 }
 
 export default function SellerDashboard({ user, orders, stats }: SellerDashboardProps) {
     const [view, setView] = useState("overview");
     const [returnRequests, setReturnRequests] = useState<any[]>([]);
     const [loadingReturns, setLoadingReturns] = useState(false);
-
-    // --- NUEVOS ESTADOS AGREGADOS ---
     const [managingId, setManagingId] = useState<string | null>(null);
 
     // EFECTO: Cargar devoluciones cuando se selecciona la vista
@@ -34,7 +32,7 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
         }
     }, [view]);
 
-    // --- NUEVA FUNCIÓN PARA CAMBIAR EL ESTADO EN LA BD ---
+    // Función para cambiar el estado de devolución
     const handleStatusChange = async (id: string, newStatus: string) => {
         try {
             const res = await fetch('/api/seller/returns', {
@@ -44,11 +42,10 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
             });
 
             if (res.ok) {
-                // Actualización optimista de la interfaz
                 setReturnRequests(prev =>
                     prev.map(r => r.id === id ? { ...r, status: newStatus } : r)
                 );
-                setManagingId(null); // Cerrar menú de gestión
+                setManagingId(null);
             }
         } catch (err) {
             console.error("Error al actualizar en VibeMarket:", err);
@@ -90,11 +87,10 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
                     <SidebarItem
                         icon="local_shipping"
                         label="Pedidos"
-                        badge="5"
+                        badge={orders?.length > 0 ? orders.length.toString() : "0"}
                         active={view === 'orders'}
                         onClick={() => setView('orders')}
                     />
-                    {/* SE AGREGARON LAS OPCIONES FALTANTES AQUÍ */}
                     <SidebarItem
                         icon="assignment_return"
                         label="Devoluciones"
@@ -141,11 +137,21 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
                     <div>
                         <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight italic uppercase">
                             {view === 'returns' ? 'Gestión de Retornos' :
-                                view === 'history' ? 'Historial de Gastos' : 'Panel de Control'}
+                                view === 'history' ? 'Historial de Gastos' : 
+                                view === 'descuentos' ? 'Promociones' : 'Panel de Control'}
                         </h2>
                         <p className="text-gray-500 font-medium">Hola {user?.name?.split(' ')[0]}, administra tu tienda aquí.</p>
                     </div>
                 </header>
+
+                {/* --- VISTAS DINÁMICAS --- */}
+                {view === 'overview' && <div className="animate-in fade-in text-gray-400 font-black uppercase text-xs tracking-widest">Resumen General de VibeMarket</div>}
+                
+                {view === 'catalog' && <CatalogManager />}
+                
+                {view === 'orders' && <OrdersManager />}
+                
+                {view === 'descuentos' && <DiscountsPage />}
 
                 {/* --- VISTA DE DEVOLUCIONES --- */}
                 {view === 'returns' && (
@@ -155,13 +161,13 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
                                 <p className="animate-pulse font-black text-gray-400 uppercase text-xs tracking-widest">Sincronizando protocolos...</p>
                             </div>
                         ) : returnRequests.length === 0 ? (
-                            <div className="p-20 text-center bg-white rounded-[3rem] border border-gray-100 shadow-sm">
-                                <span className="material-symbols-outlined text-6xl text-gray-200 mb-4">inventory_2</span>
+                            <div className="p-20 text-center bg-white dark:bg-[#1a1010] rounded-[3rem] border border-gray-100 dark:border-gray-800 shadow-sm">
+                                <span className="material-symbols-outlined text-6xl text-gray-200 dark:text-gray-800 mb-4">inventory_2</span>
                                 <p className="font-black text-gray-400 uppercase text-xs tracking-widest">No hay solicitudes de devolución</p>
                             </div>
                         ) : (
                             returnRequests.map((req) => (
-                                <div key={req.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex justify-between items-center group hover:border-primary/20 transition-all">
+                                <div key={req.id} className="bg-white dark:bg-[#1a1010] p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 flex justify-between items-center group hover:border-primary/20 transition-all">
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-3">
                                             <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase italic ${req.status === 'APPROVED' ? 'bg-green-100 text-green-600' :
@@ -169,7 +175,7 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
                                                 }`}>
                                                 {req.status}
                                             </span>
-                                            <h3 className="font-black text-xl tracking-tighter">ORDEN #{req.orderId.substring(0, 8).toUpperCase()}</h3>
+                                            <h3 className="font-black text-xl tracking-tighter dark:text-white">ORDEN #{req.orderId.substring(0, 8).toUpperCase()}</h3>
                                         </div>
                                         <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Motivo: {req.reason}</p>
                                         <p className="text-gray-500 text-sm font-medium italic">"{req.description}"</p>
@@ -178,32 +184,12 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
                                     <div className="flex gap-3">
                                         {managingId === req.id ? (
                                             <div className="flex gap-2 animate-in zoom-in-95 duration-300">
-                                                <button
-                                                    onClick={() => handleStatusChange(req.id, 'APPROVED')}
-                                                    className="px-6 py-3 bg-green-500 text-white rounded-xl font-black uppercase text-[9px] tracking-widest hover:bg-green-600 transition-all"
-                                                >
-                                                    Aprobar
-                                                </button>
-                                                <button
-                                                    onClick={() => handleStatusChange(req.id, 'REJECTED')}
-                                                    className="px-6 py-3 bg-rose-500 text-white rounded-xl font-black uppercase text-[9px] tracking-widest hover:bg-rose-600 transition-all"
-                                                >
-                                                    Rechazar
-                                                </button>
-                                                <button
-                                                    onClick={() => setManagingId(null)}
-                                                    className="px-4 py-3 text-gray-400 font-black uppercase text-[9px] hover:text-black transition-colors"
-                                                >
-                                                    <span className="material-symbols-outlined text-lg">close</span>
-                                                </button>
+                                                <button onClick={() => handleStatusChange(req.id, 'APPROVED')} className="px-6 py-3 bg-green-500 text-white rounded-xl font-black uppercase text-[9px] tracking-widest hover:bg-green-600">Aprobar</button>
+                                                <button onClick={() => handleStatusChange(req.id, 'REJECTED')} className="px-6 py-3 bg-rose-500 text-white rounded-xl font-black uppercase text-[9px] tracking-widest hover:bg-rose-600">Rechazar</button>
+                                                <button onClick={() => setManagingId(null)} className="px-4 py-3 text-gray-400 font-black uppercase text-[9px] hover:text-black dark:hover:text-white"><span className="material-symbols-outlined text-lg">close</span></button>
                                             </div>
                                         ) : (
-                                            <button
-                                                onClick={() => setManagingId(req.id)}
-                                                className="px-8 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-primary transition-all"
-                                            >
-                                                Gestionar
-                                            </button>
+                                            <button onClick={() => setManagingId(req.id)} className="px-8 py-4 bg-gray-900 dark:bg-white dark:text-black text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-primary dark:hover:bg-primary dark:hover:text-white transition-all">Gestionar</button>
                                         )}
                                     </div>
                                 </div>
@@ -212,41 +198,29 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
                     </div>
                 )}
 
-                {/* --- OTRAS VISTAS --- */}
+                {/* --- VISTA DE HISTORIAL --- */}
                 {view === 'history' && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                            <div className="bg-white dark:bg-[#1a1010] p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800">
                                 <h3 className="text-sm font-bold text-gray-500 mb-2">Total Gastado</h3>
-                                <p className="text-3xl font-black text-primary">{stats.totalSpent}</p>
+                                <p className="text-3xl font-black text-primary">{stats?.totalSpent || "$0.00"}</p>
                             </div>
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                            <div className="bg-white dark:bg-[#1a1010] p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800">
                                 <h3 className="text-sm font-bold text-gray-500 mb-2">Ticket Promedio</h3>
-                                <p className="text-3xl font-black text-gray-800">{stats.avgTicket}</p>
+                                <p className="text-3xl font-black text-gray-800 dark:text-white">{stats?.avgTicket || "$0.00"}</p>
                             </div>
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                            <div className="bg-white dark:bg-[#1a1010] p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800">
                                 <h3 className="text-sm font-bold text-gray-500 mb-2">Total de Órdenes</h3>
-                                <p className="text-3xl font-black text-gray-800">{stats.count}</p>
+                                <p className="text-3xl font-black text-gray-800 dark:text-white">{stats?.count || "0"}</p>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {view === 'overview' && <div className="animate-in fade-in">Resumen General</div>}
-                {view === 'catalog' && <CatalogManager />}
-                {view === 'orders' && <OrdersManager />}
-                {view === 'descuentos' && <DiscountsPage />}
-
-
-                {/* --- VALIDACIÓN DE MÓDULOS EN CONSTRUCCIÓN (CORREGIDA) --- */}
-                {(view !== 'overview' && 
-                  view !== 'catalog' && 
-                  view !== 'history' && 
-                  view !== 'orders' && 
-                  view !== 'returns' && 
-                  view !== 'descuentos') && (
-
-                    <div className="flex flex-col items-center justify-center h-96 bg-white dark:bg-[#1a1010] rounded-3xl border-2 border-dashed border-gray-200">
+                {/* --- FALLBACK PARA MÓDULOS NO DEFINIDOS --- */}
+                {![ 'overview', 'catalog', 'history', 'orders', 'returns', 'descuentos' ].includes(view) && (
+                    <div className="flex flex-col items-center justify-center h-96 bg-white dark:bg-[#1a1010] rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-800">
                         <span className="material-symbols-outlined text-4xl text-gray-400">construction</span>
                         <p className="text-gray-500 mt-2">Módulo {view} en construcción.</p>
                     </div>
@@ -257,7 +231,6 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
     );
 }
 
-// Subcomponente de Botón Sidebar
 function SidebarItem({ icon, label, active, onClick, badge }: any) {
     return (
         <button
@@ -269,7 +242,7 @@ function SidebarItem({ icon, label, active, onClick, badge }: any) {
         >
             <span className={`material-symbols-outlined ${active ? "fill-1" : ""} group-hover:scale-110 transition-transform`}>{icon}</span>
             <span className="text-sm font-medium">{label}</span>
-            {badge && <span className="ml-auto bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">{badge}</span>}
+            {badge && badge !== "0" && <span className="ml-auto bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">{badge}</span>}
         </button>
     )
 }
