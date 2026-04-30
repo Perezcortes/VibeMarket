@@ -56,12 +56,12 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
                 onClick={() => setView('catalog')} 
             />
             <SidebarItem 
-                icon="local_shipping" 
-                label="Pedidos" 
-                badge="5" 
-                active={view === 'orders'} 
-                onClick={() => setView('orders')} 
-            />
+    icon="local_shipping" 
+    label="Pedidos" 
+    badge={orders.length > 0 ? orders.length.toString() : undefined} 
+    active={view === 'orders'} 
+    onClick={() => setView('orders')} 
+/>
          </nav>
 
          <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/5">
