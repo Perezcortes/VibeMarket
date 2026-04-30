@@ -19,13 +19,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Ya existe una solicitud para este pedido" }, { status: 400 });
     }
 
-    // 2. Crear la solicitud en la base de datos usando el Enum ReturnStatus
+  
     const newReturn = await prisma.returnRequest.create({
       data: {
         orderId: orderId,
         reason: reason,
         description: description,
-        status: "PENDING", // Estado inicial definido en el Enum
+        status: "PENDING", 
       },
     });
 
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   }
 }
 
-// Mantén tu método GET aquí abajo para que el historial siga funcionando...
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
