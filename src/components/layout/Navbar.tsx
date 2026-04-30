@@ -42,6 +42,11 @@ export default async function Navbar({ user }: { user: any }) {
 
         {/* Menú Derecha */}
         <div className="flex items-center gap-6">
+          {/* Devoluciones */}
+          <Link href="/dashboard/buyer/returns" className="relative group">
+            <span className="material-symbols-outlined text-2xl text-gray-600 group-hover:text-primary transition-colors">assignment_return</span>
+          </Link>
+
           <Link href="/cart" className="relative group">
             <span className="material-symbols-outlined text-2xl text-gray-600 group-hover:text-primary transition-colors">shopping_cart</span>
             
