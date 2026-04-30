@@ -108,15 +108,15 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                         <h3 className="text-sm font-bold text-gray-500 mb-2">Total Gastado</h3>
-                        <p className="text-3xl font-black text-primary">{stats.totalSpent}</p>
+                        <p className="text-3xl font-black text-primary">{stats?.totalSpent}</p>
                      </div>
                      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                         <h3 className="text-sm font-bold text-gray-500 mb-2">Ticket Promedio</h3>
-                        <p className="text-3xl font-black text-gray-800">{stats.avgTicket}</p>
+                        <p className="text-3xl font-black text-gray-800">{stats?.avgTicket}</p>
                      </div>
                      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                         <h3 className="text-sm font-bold text-gray-500 mb-2">Total de Órdenes</h3>
-                        <p className="text-3xl font-black text-gray-800">{stats.count}</p>
+                        <p className="text-3xl font-black text-gray-800">{stats?.count}</p>
                      </div>
                 </div>
 
@@ -132,7 +132,7 @@ export default function SellerDashboard({ user, orders, stats }: SellerDashboard
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {orders.map((order) => (
+                            {orders?.map((order) => (
                                 <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="p-4 text-sm font-bold text-gray-700">#{order.id}</td>
                                     <td className="p-4 text-sm text-gray-500">{order.date}</td>
