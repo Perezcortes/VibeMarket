@@ -1,4 +1,3 @@
-"use client";
 import Link from "next/link";
 import NavbarUser from "@/components/NavbarUser"; 
 import SearchBar from "./SearchBar"; 
